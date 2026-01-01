@@ -62,16 +62,38 @@ read LAB_NAME
 LAB_NAME=${LAB_NAME:-"Lab Dashboard"}
 
 
+# Determine if we have port checking tools
+HAS_PORT_CHECKER=false
+if command -v ss &> /dev/null || command -v netstat &> /dev/null; then
+    HAS_PORT_CHECKER=true
+fi
+
 while true; do
     echo -n "Port (default: 8088): "
     read PORT
     PORT=${PORT:-8088}
     
-    if netstat -tuln | grep -q ":$PORT "; then
-        echo -e "${RED}Port $PORT already in use.${NC}"
-    else
-        break
+    # Only check port if we have tools available
+    if [ "$HAS_PORT_CHECKER" = true ]; then
+        PORT_IN_USE=false
+        
+        if command -v ss &> /dev/null; then
+            if ss -tuln | grep -q ":$PORT "; then
+                PORT_IN_USE=true
+            fi
+        elif command -v netstat &> /dev/null; then
+            if netstat -tuln | grep -q ":$PORT "; then
+                PORT_IN_USE=true
+            fi
+        fi
+        
+        if [ "$PORT_IN_USE" = true ]; then
+            echo -e "${RED}Port $PORT is already in use.${NC}"
+            continue
+        fi
     fi
+    
+    break
 done
 echo -e "${GREEN}[OK]${NC} Configuration set\n"
 
@@ -169,7 +191,7 @@ if command -v systemctl &> /dev/null; then
     systemctl daemon-reload
     echo -e "${GREEN}[OK]${NC} Systemd service created"
     
-    echo -e "\n${YELLOW}Start service now? [y/N]: "
+    echo -en "\n${YELLOW}Start service now? [y/N]: ${NC}"
     read start
     if [ "$start" == "y" ] || [ "$start" == "Y" ]; then
         systemctl enable labdash

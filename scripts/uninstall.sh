@@ -16,7 +16,7 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 echo -e "${RED}╔════════════════════════════════════╗${NC}"
-echo -e "${RED}║    LabDash Uninstall Script        ║${NC}"
+echo -e "${RED}║      LabDash Uninstall Script      ║${NC}"
 echo -e "${RED}╚════════════════════════════════════╝${NC}"
 echo
 

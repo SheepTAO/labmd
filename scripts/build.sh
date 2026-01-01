@@ -105,10 +105,13 @@ prepare_releases() {
         cp scripts/uninstall.sh "$pkg_dir/"
         chmod +x "$pkg_dir/uninstall.sh"
         
-        # Create tarball
+        # Create versioned tarball (for archive)
         tar -czf "$RELEASE_DIR/labdash-$platform-$VERSION.tar.gz" -C "$BUILD_DIR" "labdash-$platform-$VERSION"
-        
         log "Package created: labdash-$platform-$VERSION.tar.gz"
+        
+        # Create latest tarball (fixed name, for easy download)
+        tar -czf "$RELEASE_DIR/labdash-$platform.tar.gz" -C "$BUILD_DIR" "labdash-$platform-$VERSION"
+        log "Package created: labdash-$platform.tar.gz (latest)"
     done
 }
 
@@ -124,7 +127,8 @@ generate_checksums() {
 # Main build process
 main() {
     echo "========================================="
-    echo "  LabDash Build Script v$VERSION"
+    echo "       LabDash Build Script v1.0         "
+    echo "       Building version: $VERSION        "
     echo "========================================="
     echo ""
     
@@ -136,7 +140,7 @@ main() {
     
     echo ""
     echo "========================================="
-    echo "  Build Complete! "
+    echo "             Build Complete!             "
     echo "========================================="
     echo ""
     echo "Release packages are in: $RELEASE_DIR/"
