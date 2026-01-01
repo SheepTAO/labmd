@@ -11,13 +11,13 @@ A modern monitoring and documentation system for research laboratories.
 
 **Real-time metrics • Collaborative docs • Zero dependencies • Single binary**
 
-[Installation](#-installation) • [Configuration](#-configuration) • [Development](#-development)
+[Installation](#installation) • [Configuration](#configuration) • [Documentation](#documentation) • [Uninstall](#uninstall)
 
 </div>
 
 ---
 
-## ✨ Features
+## Features
 
 - **System Monitoring**: Real-time CPU, GPU, RAM, and disk usage with charts
 - **Documentation**: Markdown docs with LaTeX math, code highlighting, and file tree
@@ -25,15 +25,16 @@ A modern monitoring and documentation system for research laboratories.
 - **Modern UI**: Glassmorphism design with smooth animations
 - **Zero Dependencies**: Single binary, no external services needed
 
-## 📦 Installation
+## Installation
 
 ### Quick Install
 
 **1. Download and extract**
 ```bash
-wget https://github.com/yourusername/labdash/releases/latest/download/labdash-linux-amd64-1.0.0.tar.gz
-tar -xzf labdash-linux-amd64-1.0.0.tar.gz
-cd labdash-linux-amd64-1.0.0
+# Download latest release
+wget https://github.com/SheepTAO/labdash/releases/latest/download/labdash-linux-amd64.tar.gz
+tar -xzf labdash-linux-amd64.tar.gz
+cd labdash-linux-amd64
 ```
 
 **2. Run installer**
@@ -86,7 +87,7 @@ sudo systemctl status labdash     # Check status
 sudo journalctl -u labdash -f     # View logs
 ```
 
-## ⚙️ Configuration
+## Configuration
 
 Edit `/etc/labdash/config.json`:
 
@@ -166,7 +167,7 @@ Monitor logs for state transitions:
 sudo journalctl -u labdash -f | grep Monitor
 ```
 
-## 📝 Using Documentation
+## Documentation
 
 ### Add Markdown Files
 
@@ -204,7 +205,7 @@ vim my-doc.md
 
 See [index.md](templates/index.md) for detailed documentation guide.
 
-## 🛠️ Development
+## Development
 
 ### Prerequisites
 
@@ -240,7 +241,7 @@ npm run dev   # http://localhost:5173
 
 Output: `build/release/labdash-linux-amd64-1.0.x.tar.gz`
 
-## 🗑️ Uninstall
+## Uninstall
 
 Run the uninstall script from its system location:
 
@@ -256,7 +257,7 @@ The uninstall script will:
 3. Remove uninstall script itself
 4. Optionally delete config and docs (with size/count info for safety)
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - [Lucide Icons](https://lucide.dev/) - Beautiful icon set
 - [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS framework
