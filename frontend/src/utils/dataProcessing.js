@@ -6,7 +6,8 @@ export const processConfig = (data) => ({
     intervalCRG: data?.monitor?.intervalCRGSec || 2,
     historyCPU: data?.monitor?.historyCPU ?? 20,
     historyGPU: data?.monitor?.historyGPU ?? 20,
-    historyRAM: data?.monitor?.historyRAM ?? 20
+    historyRAM: data?.monitor?.historyRAM ?? 20,
+    defaultDoc: data?.defaultDoc || "index.md"
 });
 
 // --- Data Normalization ---
