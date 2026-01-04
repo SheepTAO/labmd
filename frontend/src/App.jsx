@@ -181,9 +181,28 @@ const App = () => {
       )}
 
       <div className="p-3 border-t border-slate-200 mx-4 shrink-0">
-        <div className="text-xs text-slate-400 font-medium flex items-center gap-4">
-          <Tag size={12} className="text-indigo-400"/> 
-          <span>{config.version}</span>
+        <div className="text-xs font-medium flex items-center justify-between gap-3">
+          <a 
+            href="https://github.com/SheepTAO/labdash"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-slate-400 hover:text-indigo-600 transition-colors group"
+            title="View project on GitHub"
+          >
+            <Tag size={12} className="text-indigo-400 group-hover:text-indigo-500"/> 
+            <span>{config.version}</span>
+          </a>
+          <a 
+            href={`mailto:${config.admin.email}`}
+            className="text-slate-500 hover:text-indigo-600 flex items-center gap-1.5 transition-colors group"
+            title={`Contact ${config.admin.name}`}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400 group-hover:text-indigo-500 shrink-0">
+              <circle cx="12" cy="8" r="5"/>
+              <path d="M20 21a8 8 0 1 0-16 0"/>
+            </svg>
+            <span className="truncate">{config.admin.name}</span>
+          </a>
         </div>
       </div>
     </>

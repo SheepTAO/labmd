@@ -14,7 +14,11 @@ type Config struct {
 	DocsDepth   int    `json:"docsDepth"`  // Max depth for docs tree
 	DefaultDoc  string `json:"defaultDoc"` // Default document to load as homepage
 	Version     string `json:"version"`    // Labdash version
-	Monitor     struct {
+	Admin       struct {
+		Name  string `json:"name"`
+		Email string `json:"email"`
+	} `json:"admin"`
+	Monitor struct {
 		IntervalCRG      int     `json:"intervalCRGSec"`        // CPU, RAM, GPU (seconds)
 		IntervalDisk     float64 `json:"intervalDiskHours"`     // Disk (hours)
 		IdleTimeout      int     `json:"idleTimeoutSec"`        // Idle mode timeout (seconds)
@@ -42,6 +46,8 @@ func LoadConfig(configPath string) {
 	globalConfig.DocsPath = "/home/labdash/docs" // Default docs folder
 	globalConfig.DocsDepth = 4                   // Default depth 4
 	globalConfig.DefaultDoc = "index.md"         // Default homepage
+	globalConfig.Admin.Name = "Admin"
+	globalConfig.Admin.Email = "admin@example.com"
 	globalConfig.Version = Version
 
 	// Monitor defaults

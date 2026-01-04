@@ -61,6 +61,14 @@ echo -n "Lab name (default: Lab Dashboard): "
 read LAB_NAME
 LAB_NAME=${LAB_NAME:-"Lab Dashboard"}
 
+echo -n "Admin name (default: Admin): "
+read ADMIN_NAME
+ADMIN_NAME=${ADMIN_NAME:-"Admin"}
+
+echo -n "Admin email (default: admin@example.com): "
+read ADMIN_EMAIL
+ADMIN_EMAIL=${ADMIN_EMAIL:-"admin@example.com"}
+
 
 # Determine if we have port checking tools
 HAS_PORT_CHECKER=false
@@ -160,6 +168,10 @@ cat > /etc/labdash/config.json << EOF
   "docsPath": "$DOCS_PATH",
   "docsDepth": 4,
   "defaultDoc": "index.md",
+  "admin": {
+    "name": "$ADMIN_NAME",
+    "email": "$ADMIN_EMAIL"
+  },
   "monitor": {
     "intervalCRGSec": 2,
     "intervalDiskHours": 1,

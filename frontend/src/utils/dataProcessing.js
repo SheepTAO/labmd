@@ -7,7 +7,11 @@ export const processConfig = (data) => ({
     historyCPU: data?.monitor?.historyCPU ?? 20,
     historyGPU: data?.monitor?.historyGPU ?? 20,
     historyRAM: data?.monitor?.historyRAM ?? 20,
-    defaultDoc: data?.defaultDoc || "index.md"
+    defaultDoc: data?.defaultDoc || "index.md",
+    admin: {
+        name: data?.admin?.name || "Admin",
+        email: data?.admin?.email || "admin@example.com"
+    }
 });
 
 // --- Data Normalization ---
