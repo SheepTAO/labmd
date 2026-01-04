@@ -13,6 +13,7 @@ type Config struct {
 	DocsPath    string `json:"docsPath"`   // User configurable source doc
 	DocsDepth   int    `json:"docsDepth"`  // Max depth for docs tree
 	DefaultDoc  string `json:"defaultDoc"` // Default document to load as homepage
+	Version     string `json:"version"`    // Labdash version
 	Monitor     struct {
 		IntervalCRG      int     `json:"intervalCRGSec"`        // CPU, RAM, GPU (seconds)
 		IntervalDisk     float64 `json:"intervalDiskHours"`     // Disk (hours)
@@ -41,8 +42,11 @@ func LoadConfig(configPath string) {
 	globalConfig.DocsPath = "/home/labdash/docs" // Default docs folder
 	globalConfig.DocsDepth = 4                   // Default depth 4
 	globalConfig.DefaultDoc = "index.md"         // Default homepage
-	globalConfig.Monitor.IntervalCRG = 2         // 2 seconds
-	globalConfig.Monitor.IntervalDisk = 1        // 1 hour
+	globalConfig.Version = Version
+
+	// Monitor defaults
+	globalConfig.Monitor.IntervalCRG = 2  // 2 seconds
+	globalConfig.Monitor.IntervalDisk = 1 // 1 hour
 	// Idle mode: reduces monitoring frequency when inactive to save resources
 	globalConfig.Monitor.IdleTimeout = 60      // 60 seconds idle timeout (0 = never idle)
 	globalConfig.Monitor.IdleIntervalCRG = 300 // 300 seconds when idle
@@ -50,6 +54,7 @@ func LoadConfig(configPath string) {
 	globalConfig.Monitor.HistoryCPU = 20
 	globalConfig.Monitor.HistoryGPU = 20
 	globalConfig.Monitor.HistoryRAM = 20
+	// Disk defaults
 	globalConfig.Disk.IncludedPartitions = map[string]string{
 		"/":     "System Root",
 		"/home": "User Home",
