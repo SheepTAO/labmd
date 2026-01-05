@@ -19,11 +19,10 @@ type Config struct {
 		Email string `json:"email"`
 	} `json:"admin"`
 	Monitor struct {
-		IntervalCRG      int     `json:"intervalCRGSec"`        // CPU, RAM, GPU (seconds)
-		IntervalDisk     float64 `json:"intervalDiskHours"`     // Disk (hours)
-		IdleTimeout      int     `json:"idleTimeoutSec"`        // Idle mode timeout (seconds)
-		IdleIntervalCRG  int     `json:"idleIntervalCRGSec"`    // CRG interval when idle (seconds)
-		IdleIntervalDisk float64 `json:"idleIntervalDiskHours"` // Disk interval when idle (hours)
+		IntervalCRG      int     `json:"intervalCRGSec"`     // CPU, RAM, GPU (seconds)
+		IntervalDisk     float64 `json:"intervalDiskHours"`  // Disk (hours)
+		IdleTimeout      int     `json:"idleTimeoutSec"`     // Idle mode timeout (seconds)
+		IdleIntervalCRG  int     `json:"idleIntervalCRGSec"` // CRG interval when idle (seconds)
 		HistoryCPU       int     `json:"historyCPU"`
 		HistoryGPU       int     `json:"historyGPU"`
 		HistoryRAM       int     `json:"historyRAM"`
@@ -52,11 +51,10 @@ func LoadConfig(configPath string) {
 
 	// Monitor defaults
 	globalConfig.Monitor.IntervalCRG = 2  // 2 seconds
-	globalConfig.Monitor.IntervalDisk = 1 // 1 hour
+	globalConfig.Monitor.IntervalDisk = 4 // 4 hours
 	// Idle mode: reduces monitoring frequency when inactive to save resources
 	globalConfig.Monitor.IdleTimeout = 60      // 60 seconds idle timeout (0 = never idle)
 	globalConfig.Monitor.IdleIntervalCRG = 300 // 300 seconds when idle
-	globalConfig.Monitor.IdleIntervalDisk = 6  // 6 hours when idle
 	globalConfig.Monitor.HistoryCPU = 20
 	globalConfig.Monitor.HistoryGPU = 20
 	globalConfig.Monitor.HistoryRAM = 20
@@ -120,7 +118,6 @@ func LoadConfig(configPath string) {
 		validateInt("IdleTimeout", &globalConfig.Monitor.IdleTimeout, 10, 3600)
 	}
 	validateInt("IdleIntervalCRG", &globalConfig.Monitor.IdleIntervalCRG, 10, 600)
-	validateFloat("IdleIntervalDisk", &globalConfig.Monitor.IdleIntervalDisk, 0.5, 48)
 
 	// History sizes
 	validateInt("HistoryCPU", &globalConfig.Monitor.HistoryCPU, 5, 100)

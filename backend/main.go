@@ -67,9 +67,9 @@ func main() {
 
 	fmt.Printf("Initializing %s Backend (%s)...\n", globalConfig.ProjectName, Version)
 	fmt.Printf("Paths: Dist=%s, Docs=%s\n", DistPath, globalConfig.DocsPath)
-	fmt.Printf("Monitor: CRG=%ds/%ds, Disk=%.1fh/%.1fh, Idle=%ds\n",
+	fmt.Printf("Monitor: CRG=%ds/%ds, Disk=%.1fh, Idle=%ds\n",
 		globalConfig.Monitor.IntervalCRG, globalConfig.Monitor.IdleIntervalCRG,
-		globalConfig.Monitor.IntervalDisk, globalConfig.Monitor.IdleIntervalDisk,
+		globalConfig.Monitor.IntervalDisk,
 		globalConfig.Monitor.IdleTimeout)
 
 	// 1. Initialize Data
@@ -134,39 +134,21 @@ func main() {
 		}
 	}()
 
-	// 3. Start Low-Frequency Monitoring (Disk) with adaptive interval
+	// 3. Start Low-Frequency Monitoring (Disk) - Fixed interval, not affected by idle state
 	go func() {
+		// Initial scan
 		updateDiskStats()
 
-		// Helper to get interval based on idle state
-		getInterval := func(idle bool) time.Duration {
-			var interval time.Duration
-			if idle {
-				interval = time.Duration(globalConfig.Monitor.IdleIntervalDisk * float64(time.Hour))
-			} else {
-				interval = time.Duration(globalConfig.Monitor.IntervalDisk * float64(time.Hour))
-			}
-			return max(interval, 5*time.Minute)
-		}
+		// Disk data changes slowly, use fixed interval (no idle adjustment)
+		interval := time.Duration(globalConfig.Monitor.IntervalDisk * float64(time.Hour))
+		interval = max(interval, 5*time.Minute) // Minimum 5 minutes
 
-		currentInterval := getInterval(false)
-		ticker := time.NewTicker(currentInterval)
+		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
 
+		fmt.Printf("[Monitor] Disk scan interval: %.1fh (fixed, no idle adjustment)\n", interval.Hours())
+
 		for range ticker.C {
-			// Check current idle state and adjust interval if needed
-			idleMutex.RLock()
-			currentIdleState := isIdle
-			idleMutex.RUnlock()
-
-			newInterval := getInterval(currentIdleState)
-			if newInterval != currentInterval {
-				fmt.Printf("[Monitor] Disk interval changed: %.1fh → %.1fh\n",
-					currentInterval.Hours(), newInterval.Hours())
-				currentInterval = newInterval
-				ticker.Reset(currentInterval)
-			}
-
 			updateDiskStats()
 		}
 	}()
@@ -259,10 +241,9 @@ func handleStats(w http.ResponseWriter, r *http.Request) {
 	lastAccessTime = time.Now()
 	idleMutex.Unlock()
 
-	// If currently idle, refresh data immediately for accurate stats
+	// If currently idle, trigger async refresh of real-time stats
 	if wasIdle {
-		updateRealTimeStats()
-		updateDiskStats()
+		go updateRealTimeStats()
 	}
 
 	dataMutex.RLock()
