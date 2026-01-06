@@ -22,6 +22,7 @@ var (
 	lastAccessTime time.Time
 	isIdle         bool
 	idleMutex      sync.RWMutex
+	stateChangeCh  = make(chan bool, 1) // Signal channel for immediate state check
 )
 
 // --- Data Structures ---
@@ -92,8 +93,8 @@ func main() {
 		ticker := time.NewTicker(currentInterval)
 		defer ticker.Stop()
 
-		for range ticker.C {
-			// Determine current state based on last access time (single source of truth)
+		checkAndUpdate := func() {
+			// Determine current state based on last access time
 			idleMutex.RLock()
 			timeSinceAccess := time.Since(lastAccessTime)
 			idleMutex.RUnlock()
@@ -132,6 +133,17 @@ func main() {
 
 			updateRealTimeStats()
 		}
+
+		for {
+			select {
+			case <-ticker.C:
+				// Regular periodic check
+				checkAndUpdate()
+			case <-stateChangeCh:
+				// Immediate check triggered by external event (e.g., user access)
+				checkAndUpdate()
+			}
+		}
 	}()
 
 	// 3. Start Low-Frequency Monitoring (Disk) - Fixed interval, not affected by idle state
@@ -141,12 +153,9 @@ func main() {
 
 		// Disk data changes slowly, use fixed interval (no idle adjustment)
 		interval := time.Duration(globalConfig.Monitor.IntervalDisk * float64(time.Hour))
-		interval = max(interval, 5*time.Minute) // Minimum 5 minutes
-
+		fmt.Printf("[Monitor] Disk scan interval: %.1fh (fixed, no idle adjustment)\n", interval.Hours())
 		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
-
-		fmt.Printf("[Monitor] Disk scan interval: %.1fh (fixed, no idle adjustment)\n", interval.Hours())
 
 		for range ticker.C {
 			updateDiskStats()
@@ -235,15 +244,18 @@ func handleStats(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "application/json")
 
-	// Update last access time (let CRG goroutine handle state transition)
+	// Update last access time
 	idleMutex.Lock()
 	wasIdle := isIdle
 	lastAccessTime = time.Now()
 	idleMutex.Unlock()
 
-	// If currently idle, trigger async refresh of real-time stats
+	// If was idle, signal CRG goroutine to immediately check state and update
 	if wasIdle {
-		go updateRealTimeStats()
+		select {
+		case stateChangeCh <- true: // Non-blocking send
+		default: // Skip if channel full (update already pending)
+		}
 	}
 
 	dataMutex.RLock()
