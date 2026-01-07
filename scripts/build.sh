@@ -29,7 +29,12 @@ clean() {
 build_frontend() {
     log "Building frontend..."
     cd frontend
-    npm install
+    
+    # Install dependencies if needed
+    if [ ! -d "node_modules" ]; then
+        log "Installing frontend dependencies..."
+        npm install
+    fi
     
     # Build directly to target directory
     VITE_BUILD_DIR="../$BUILD_DIR/dist" npm run build

@@ -20,53 +20,10 @@ echo -e "${RED}║      LabDash Uninstall Script      ║${NC}"
 echo -e "${RED}╚════════════════════════════════════╝${NC}"
 echo
 
-# Stop service
-if systemctl is-active --quiet labdash 2>/dev/null; then
-    echo -e "${YELLOW}Stopping LabDash service...${NC}"
-    systemctl stop labdash
-    systemctl disable labdash
-    echo -e "${GREEN}[OK]${NC} Service stopped"
-fi
-
-# Remove systemd service
-if [ -f "/etc/systemd/system/labdash.service" ]; then
-    rm -f /etc/systemd/system/labdash.service
-    systemctl daemon-reload
-    echo -e "${GREEN}[OK]${NC} Systemd service removed"
-fi
-
-# Remove binary
-if [ -f "/usr/local/bin/labdash" ]; then
-    rm -f /usr/local/bin/labdash
-    echo -e "${GREEN}[OK]${NC} Binary removed"
-fi
-
-# Get docs path from config before removing frontend assets
+# Get docs path from config before removing
 DOCS_PATH=""
 if [ -f "/etc/labdash/config.json" ]; then
     DOCS_PATH=$(grep -oP '"docsPath":\s*"\K[^"]+' /etc/labdash/config.json 2>/dev/null || echo "")
-fi
-
-# Remove frontend assets and uninstall script
-if [ -d "/usr/share/labdash" ]; then
-    rm -rf /usr/share/labdash
-    echo -e "${GREEN}[OK]${NC} Frontend assets removed"
-fi
-
-# Handle config file
-if [ -f "/etc/labdash/config.json" ]; then
-    echo
-    echo -e "${YELLOW}Delete configuration file?${NC}"
-    echo -e "  Location: ${BLUE}/etc/labdash/config.json${NC}"
-    echo -n "Delete? [y/N]: "
-    read delete_config
-    
-    if [ "$delete_config" == "y" ] || [ "$delete_config" == "Y" ]; then
-        rm -rf /etc/labdash
-        echo -e "${GREEN}[OK]${NC} Configuration removed"
-    else
-        echo -e "${BLUE}[INFO]${NC} Configuration kept"
-    fi
 fi
 
 # Handle documentation directory
@@ -116,6 +73,39 @@ fi
 if id -u labdash > /dev/null 2>&1; then
     userdel labdash 2>/dev/null || true
     echo -e "${GREEN}[OK]${NC} Removed labdash user"
+fi
+
+# Stop service
+if systemctl is-active --quiet labdash 2>/dev/null; then
+    echo -e "${YELLOW}Stopping LabDash service...${NC}"
+    systemctl stop labdash
+    systemctl disable labdash
+    echo -e "${GREEN}[OK]${NC} Service stopped"
+fi
+
+# Remove systemd service
+if [ -f "/etc/systemd/system/labdash.service" ]; then
+    rm -f /etc/systemd/system/labdash.service
+    systemctl daemon-reload
+    echo -e "${GREEN}[OK]${NC} Systemd service removed"
+fi
+
+# Remove binary
+if [ -f "/usr/local/bin/labdash" ]; then
+    rm -f /usr/local/bin/labdash
+    echo -e "${GREEN}[OK]${NC} Binary removed"
+fi
+
+# Remove frontend assets and uninstall script
+if [ -d "/usr/share/labdash" ]; then
+    rm -rf /usr/share/labdash
+    echo -e "${GREEN}[OK]${NC} Frontend assets removed"
+fi
+
+# Remove config file automatically
+if [ -f "/etc/labdash/config.json" ] || [ -d "/etc/labdash" ]; then
+    rm -rf /etc/labdash
+    echo -e "${GREEN}[OK]${NC} Configuration removed"
 fi
 
 # Done
