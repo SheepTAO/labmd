@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"os/exec"
 	"regexp"
@@ -66,7 +67,7 @@ var (
 	nvmlDeviceCount int
 )
 
-// Get CPU Real-time Info
+// Get CPU Real-time stats
 func GetCPURealTime() CPUStats {
 	// If first run, read CPU model
 	if !cpuInfoLoaded {
@@ -230,7 +231,7 @@ func initNVML() {
 
 	ret := nvml.Init()
 	if ret != nvml.SUCCESS {
-		fmt.Printf("[info] NVML init failed: %v, using nvidia-smi fallback\n", nvml.ErrorString(ret))
+		log.Printf("[WARN] NVML init failed: %v, using nvidia-smi fallback", nvml.ErrorString(ret))
 		nvmlAvailable = false
 		return
 	}
@@ -238,7 +239,7 @@ func initNVML() {
 	// Get device count
 	count, ret := nvml.DeviceGetCount()
 	if ret != nvml.SUCCESS {
-		fmt.Printf("[info] NVML device count failed: %v, using nvidia-smi fallback\n", nvml.ErrorString(ret))
+		log.Printf("[WARN] NVML device count failed: %v, using nvidia-smi fallback", nvml.ErrorString(ret))
 		nvml.Shutdown()
 		nvmlAvailable = false
 		return
@@ -246,7 +247,7 @@ func initNVML() {
 
 	nvmlDeviceCount = count
 	nvmlAvailable = true
-	fmt.Printf("[info] NVML initialized: %d GPU(s) detected\n", count)
+	log.Printf("NVML initialized: %d GPU(s) detected", count)
 }
 
 // ShutdownNVML cleans up NVML resources (call on program exit)

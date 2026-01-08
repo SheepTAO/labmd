@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
+	"log"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -45,30 +47,142 @@ type HistoryStats struct {
 
 // --- Main Function ---
 func main() {
-	// Check command line args
-	showVersion := flag.Bool("version", false, "Show version info")
-	flag.Parse()
+	flag.Usage = func() {
+		fmt.Fprintf(flag.CommandLine.Output(), `LabDash - Lab Monitoring & Documentation Dashboard
 
-	if *showVersion {
+Usage:
+  labdash <command>
+
+Commands:
+  server       Start the LabDash server
+  info         Display configuration and system information
+  version      Show version information
+  help         Show this help message
+
+Version: %s
+Build Time: %s
+`, Version, BuildTime)
+	}
+
+	if len(os.Args) < 2 {
+		flag.Usage()
+		os.Exit(1)
+	}
+
+	switch os.Args[1] {
+	case "server":
+		serverCmd := flag.NewFlagSet("server", flag.ExitOnError)
+		skipFrontend := serverCmd.Bool("skip-frontend", false, "Skip frontend directory check (for local frontend development)")
+		serverCmd.Usage = func() {
+			fmt.Fprintf(serverCmd.Output(), "Usage: labdash server [options]\n\nStart the LabDash server\n\nOptions:\n")
+			serverCmd.PrintDefaults()
+		}
+		serverCmd.Parse(os.Args[2:])
+		LoadConfig(ConfigPath)
+		runServer(*skipFrontend)
+
+	case "info":
+		infoCmd := flag.NewFlagSet("info", flag.ExitOnError)
+		infoCmd.Usage = func() {
+			fmt.Fprintf(infoCmd.Output(), "Usage: labdash info\n\nDisplay configuration and system information\n")
+		}
+		infoCmd.Parse(os.Args[2:])
+		showInfo()
+
+	case "version":
+		versionCmd := flag.NewFlagSet("version", flag.ExitOnError)
+		versionCmd.Usage = func() {
+			fmt.Fprintf(versionCmd.Output(), "Usage: labdash version\n\nShow version information\n")
+		}
+		versionCmd.Parse(os.Args[2:])
 		fmt.Println(Version)
-		return
+
+	case "dev":
+		if AllowDev != "true" {
+			fmt.Fprintf(os.Stderr, "Unknown command: %s\n\n", os.Args[1])
+			flag.Usage()
+			os.Exit(1)
+		}
+		devCmd := flag.NewFlagSet("dev", flag.ExitOnError)
+		devCmd.Parse(os.Args[2:])
+		startServerDev()
+
+	case "help", "-h", "--help":
+		flag.Usage()
+
+	default:
+		fmt.Fprintf(os.Stderr, "Unknown command: %s\n\n", os.Args[1])
+		flag.Usage()
+		os.Exit(1)
+	}
+}
+
+func showInfo() {
+	log.SetOutput(io.Discard)
+	LoadConfig(ConfigPath)
+
+	fmt.Printf("=== LabDash Configuration ===\n")
+	fmt.Printf("Version:        %s\n", Version)
+	fmt.Printf("Build Time:     %s\n", BuildTime)
+	fmt.Printf("Project Name:   %s\n", globalConfig.ProjectName)
+	fmt.Printf("Lab Name:       %s\n", globalConfig.LabName)
+
+	fmt.Printf("=== Paths ===\n")
+	fmt.Printf("Config:         %s\n", ConfigPath)
+	fmt.Printf("Frontend Dist:  %s\n", DistPath)
+	fmt.Printf("Documentation:  %s\n", globalConfig.DocsPath)
+
+	fmt.Printf("=== Monitor Settings ===\n")
+	fmt.Printf("CRG Interval:   %ds (Active) / %ds (Idle)\n",
+		globalConfig.Monitor.IntervalCRG, globalConfig.Monitor.IdleIntervalCRG)
+	fmt.Printf("Disk Interval:  %.1fh\n", globalConfig.Monitor.IntervalDisk)
+	fmt.Printf("Idle Timeout:   %ds\n", globalConfig.Monitor.IdleTimeout)
+	fmt.Printf("History Size:   CPU=%d, GPU=%d, RAM=%d\n",
+		globalConfig.Monitor.HistoryCPU, globalConfig.Monitor.HistoryGPU, globalConfig.Monitor.HistoryRAM)
+
+	fmt.Printf("=== System Overview ===\n")
+	sys := GetStaticSystemInfo()
+	fmt.Printf("Hostname:     %s\n", sys.Hostname)
+	fmt.Printf("OS:           %s\n", sys.OS)
+	fmt.Printf("Kernel:       %s\n", sys.Kernel)
+
+	cpu := GetCPURealTime()
+	if cpu.Model != "" {
+		fmt.Printf("CPU:          %s\n", cpu.Model)
+		fmt.Printf("CPU Cores:    %d cores / %d threads\n", cpu.Cores, cpu.Threads)
 	}
 
-	// Determine paths based on mode
-	var devMode = false
-	configPath := ConfigPath
-	if AllowDev == "true" && len(os.Args) > 1 && os.Args[1] == "dev" {
-		devMode = true
-		configPath = "../dev/config.json"
-		fmt.Printf("Using Dev Config Path: %s\n", configPath)
+	ram := GetRAMRealTime()
+	fmt.Printf("RAM:          %.1fGB\n", ram.Total)
+
+	gpu, _ := GetGPURealTime()
+	if gpu.Name != "" && gpu.Name != "No GPU" {
+		fmt.Printf("GPU:          %s\n", gpu.Name)
+		fmt.Printf("GPU Memory:   %dMB\n", gpu.MemTotal)
+		fmt.Printf("CUDA:         %s\n", gpu.CUDA)
 	}
 
-	// 0. Load Config
+	disk := GetDiskUsage(true)
+	if disk.Total > 0 {
+		fmt.Printf("Disk:         %.2fTB / %.2fTB (%.1f%%)\n",
+			float64(disk.Used)/1000, float64(disk.Total)/1000,
+			float64(disk.Used)/float64(disk.Total)*100)
+	}
+}
+
+func startServerDev() {
+	fmt.Println("Starting in Dev Mode...")
+	configPath := "../dev/config.json"
+	log.Printf("Using Dev Config Path: %s", configPath)
 	LoadConfig(configPath)
+	runServer(true)
+}
 
-	fmt.Printf("Initializing %s Backend (%s)...\n", globalConfig.ProjectName, Version)
-	fmt.Printf("Paths: Dist=%s, Docs=%s\n", DistPath, globalConfig.DocsPath)
-	fmt.Printf("Monitor: CRG=%ds/%ds, Disk=%.1fh, Idle=%ds\n",
+func runServer(skipFrontendCheck bool) {
+
+	log.Printf("Initializing %s Backend (%s)...", globalConfig.ProjectName, Version)
+	log.Printf("Paths: Dist=%s, Docs=%s", DistPath, globalConfig.DocsPath)
+	log.Printf("Monitor: CRG=%ds/%ds, Disk=%.1fh, Idle=%ds",
 		globalConfig.Monitor.IntervalCRG, globalConfig.Monitor.IdleIntervalCRG,
 		globalConfig.Monitor.IntervalDisk,
 		globalConfig.Monitor.IdleTimeout)
@@ -112,9 +226,9 @@ func main() {
 			// Handle state transitions
 			if wasIdle != shouldBeIdle {
 				if shouldBeIdle {
-					fmt.Printf("[Monitor] State: Active → Idle (no activity for %ds)\n", globalConfig.Monitor.IdleTimeout)
+					log.Printf("Monitor state: Active → Idle (no activity for %ds)", globalConfig.Monitor.IdleTimeout)
 				} else {
-					fmt.Printf("[Monitor] State: Idle → Active (new connection detected)\n")
+					log.Printf("Monitor state: Idle → Active (new connection detected)")
 				}
 
 				var newInterval time.Duration
@@ -125,7 +239,7 @@ func main() {
 				}
 
 				if newInterval != currentInterval {
-					fmt.Printf("[Monitor] CRG interval changed: %ds → %ds\n", int(currentInterval.Seconds()), int(newInterval.Seconds()))
+					log.Printf("Monitor CRG interval changed: %ds → %ds", int(currentInterval.Seconds()), int(newInterval.Seconds()))
 					ticker.Reset(newInterval)
 					currentInterval = newInterval
 				}
@@ -153,7 +267,7 @@ func main() {
 
 		// Disk data changes slowly, use fixed interval (no idle adjustment)
 		interval := time.Duration(globalConfig.Monitor.IntervalDisk * float64(time.Hour))
-		fmt.Printf("[Monitor] Disk scan interval: %.1fh (fixed, no idle adjustment)\n", interval.Hours())
+		log.Printf("Monitor disk scan interval: %.1fh (fixed, no idle adjustment)", interval.Hours())
 		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
 
@@ -169,18 +283,16 @@ func main() {
 	http.HandleFunc("/api/docs/content", handleDocsContent)
 
 	// 5. Configure Frontend Static Files
-	// In dev mode, allow skipping frontend file check
-	if devMode {
-		fmt.Printf("Dev Mode: Skipping frontend file check (DistPath: %s)\n", DistPath)
+	if skipFrontendCheck {
+		log.Printf("Skipping frontend directory check (use local frontend on different port)")
 	} else {
 		if _, err := os.Stat(DistPath); os.IsNotExist(err) {
-			fmt.Printf("[Error] Frontend directory not found '%s'\n", DistPath)
-			os.Exit(1)
+			log.Fatalf("[ERROR] Frontend directory not found: %s", DistPath)
 		}
 
 		fs := http.FileServer(http.Dir(DistPath))
 		http.Handle("/", fs)
-		fmt.Printf("Frontend loaded: %s\n", DistPath)
+		log.Printf("Frontend loaded: %s", DistPath)
 	}
 
 	// 6. Configure Docs File Server (Optional)
@@ -188,21 +300,21 @@ func main() {
 
 	if docsPath != "" {
 		if _, err := os.Stat(docsPath); os.IsNotExist(err) {
-			fmt.Printf("[warn] Docs directory not found: %s\n", docsPath)
+			log.Printf("[WARN] Docs directory not found: %s", docsPath)
 		} else {
 			// Mount raw docs directory (for assets/images)
 			http.Handle("/raw/", http.StripPrefix("/raw/", http.FileServer(http.Dir(docsPath))))
-			fmt.Printf("Raw Assets Server started: %s -> /raw/\n", docsPath)
+			log.Printf("Raw Assets Server started: %s -> /raw/", docsPath)
 		}
 	} else {
-		fmt.Printf("[warn] DocsPath not configured\n")
+		log.Printf("[WARN] DocsPath not configured")
 	}
 
 	// 7. Start Server
 	serverAddr := fmt.Sprintf(":%d", globalConfig.Port)
-	fmt.Printf("Server running at: http://localhost:%d\n", globalConfig.Port)
+	log.Printf("Server running at: http://localhost:%d", globalConfig.Port)
 	if err := http.ListenAndServe(serverAddr, nil); err != nil {
-		fmt.Printf("Startup failed: %s\n", err)
+		log.Fatalf("[ERROR] Server startup failed: %v", err)
 	}
 }
 
@@ -233,7 +345,7 @@ func updateRealTimeStats() {
 }
 
 func updateDiskStats() {
-	disk := GetDiskUsage()
+	disk := GetDiskUsage(false)
 
 	dataMutex.Lock()
 	defer dataMutex.Unlock()

@@ -30,12 +30,14 @@ type DiskStats struct {
 
 // GetDiskUsage returns current disk usage statistics
 // Scans configured partitions and user home directories
-func GetDiskUsage() DiskStats {
+func GetDiskUsage(skipUsers bool) DiskStats {
 	stats := DiskStats{}
 	// Get partitions, keeping only /home (if independent) and root /
 	// This avoids showing too many irrelevant tmpfs
 	stats.Partitions, stats.Total, stats.Used = getPartitions()
-	stats.Users = getUserUsage("/home")
+	if !skipUsers {
+		stats.Users = getUserUsage("/home")
+	}
 	return stats
 }
 

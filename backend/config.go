@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
 	"os"
 )
 
@@ -68,40 +68,40 @@ func LoadConfig(configPath string) {
 
 	// 2. Try to read config file
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		fmt.Printf("[warn] Config file not found at %s, using defaults\n", configPath)
+		log.Printf("[WARN] Config file not found at %s, using defaults", configPath)
 		return
 	}
 
 	file, err := os.ReadFile(configPath)
 	if err != nil {
-		fmt.Printf("[warn] Failed to read config file: %v, using defaults\n", err)
+		log.Printf("[WARN] Failed to read config file: %v, using defaults", err)
 		return
 	}
 
 	// 3. Parse JSON
 	err = json.Unmarshal(file, &globalConfig)
 	if err != nil {
-		fmt.Printf("[error] Failed to parse config file: %v, using defaults\n", err)
+		log.Printf("[ERROR] Failed to parse config file: %v, using defaults", err)
 		return
 	}
 
 	// 4. Validate and apply constraints
 	validateInt := func(name string, value *int, min, max int) {
 		if *value <= min {
-			fmt.Printf("[warn] %s (%d) too small, using minimum %d\n", name, *value, min)
+			log.Printf("[WARN] %s (%d) too small, using minimum %d", name, *value, min)
 			*value = min
 		} else if *value >= max {
-			fmt.Printf("[warn] %s (%d) too large, using maximum %d\n", name, *value, max)
+			log.Printf("[WARN] %s (%d) too large, using maximum %d", name, *value, max)
 			*value = max
 		}
 	}
 
 	validateFloat := func(name string, value *float64, min, max float64) {
 		if *value <= min {
-			fmt.Printf("[warn] %s (%.2f) too small, using minimum %.2f\n", name, *value, min)
+			log.Printf("[WARN] %s (%.2f) too small, using minimum %.2f", name, *value, min)
 			*value = min
-		} else if *value >= max {
-			fmt.Printf("[warn] %s (%.2f) too large, using maximum %.2f\n", name, *value, max)
+		} else if *value > max {
+			log.Printf("[WARN] %s (%.2f) too large, using maximum %.2f", name, *value, max)
 			*value = max
 		}
 	}
@@ -112,7 +112,7 @@ func LoadConfig(configPath string) {
 
 	// Idle timeout
 	if globalConfig.Monitor.IdleTimeout < 10 {
-		fmt.Printf("[warn] IdleTimeout (%d) cannot be < 10, using 0 (never idle)\n", globalConfig.Monitor.IdleTimeout)
+		log.Printf("[WARN] IdleTimeout (%d) cannot be < 10, using 0 (never idle)", globalConfig.Monitor.IdleTimeout)
 		globalConfig.Monitor.IdleTimeout = 0
 	} else {
 		validateInt("IdleTimeout", &globalConfig.Monitor.IdleTimeout, 10, 3600)
