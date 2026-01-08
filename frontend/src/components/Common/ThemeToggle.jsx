@@ -50,7 +50,7 @@ const ThemeToggle = ({ theme, onToggle }) => {
       </button>
 
       {/* Hover Tooltip */}
-      <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 px-2.5 py-1 bg-slate-900 dark:bg-slate-800 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 font-medium">
+      <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 px-2.5 py-1.5 bg-slate-200/95 dark:bg-slate-800/95 text-slate-700 dark:text-slate-300 text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 font-medium backdrop-blur-sm shadow-lg border border-slate-300/50 dark:border-slate-600/50">
         {currentTheme.label}
       </div>
     </div>

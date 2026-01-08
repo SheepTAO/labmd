@@ -17,7 +17,7 @@ const CodeBlock = ({ node, inline, className, children, ...props }) => {
 
   if (!inline && match) {
     return (
-      <div className="relative group my-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-200 dark:bg-slate-800 max-w-full overflow-hidden">
+      <div className="relative group my-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-200 dark:bg-slate-800 max-w-full overflow-visible">
         {/* Floating Language Label / Copy Button */}
         <div className="absolute right-2.5 top-2.5 z-20">
             <button
@@ -36,14 +36,14 @@ const CodeBlock = ({ node, inline, className, children, ...props }) => {
                 
                 {/* Tooltip */}
                 {!copied && (
-                   <div className="absolute top-full right-0 mt-2 px-2 py-1 bg-black/80 dark:bg-slate-950/90 text-white text-[10px] rounded opacity-0 group-hover/btn:opacity-100 pointer-events-none whitespace-nowrap transition-opacity backdrop-blur-sm shadow-lg">
+                   <div className="absolute top-full right-0 mt-2 px-2.5 py-1.5 bg-slate-200/95 dark:bg-slate-800/95 text-slate-700 dark:text-slate-300 text-xs rounded-md opacity-0 group-hover/btn:opacity-100 pointer-events-none whitespace-nowrap transition-opacity backdrop-blur-sm shadow-lg border border-slate-300/50 dark:border-slate-600/50 z-50">
                       Click to Copy
                    </div>
                 )}
             </button>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto overflow-y-visible">
           <SyntaxHighlighter
             {...props}
             style={oneDark}
