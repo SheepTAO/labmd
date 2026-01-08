@@ -8,6 +8,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { processStats, processConfig } from './utils/dataProcessing';
 import NavItem from './components/Common/NavItem';
+import ThemeToggle from './components/Common/ThemeToggle';
 import MonitorView from './components/Monitor/MonitorView';
 import DocsView from './components/Docs/DocsView';
 
@@ -25,6 +26,33 @@ const App = () => {
   const [content, setContent] = useState("");
   const [docLoading, setDocLoading] = useState(false);
   const [expandedFolders, setExpandedFolders] = useState({});
+
+  // Theme State
+  const [themeMode, setThemeMode] = useState(() => localStorage.getItem('theme') || 'auto');
+
+  // Apply theme
+  useEffect(() => {
+    const applyTheme = (isDark) => {
+      document.documentElement.classList.toggle('dark', isDark);
+    };
+
+    if (themeMode === 'auto') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      applyTheme(mediaQuery.matches);
+      const listener = (e) => applyTheme(e.matches);
+      mediaQuery.addEventListener('change', listener);
+      return () => mediaQuery.removeEventListener('change', listener);
+    } else {
+      applyTheme(themeMode === 'dark');
+    }
+  }, [themeMode]);
+
+  const cycleTheme = useCallback(() => {
+    const modes = ['light', 'dark', 'auto'];
+    const nextMode = modes[(modes.indexOf(themeMode) + 1) % modes.length];
+    setThemeMode(nextMode);
+    localStorage.setItem('theme', nextMode);
+  }, [themeMode]);
 
   // Fetch App config
   useEffect(() => {
@@ -125,29 +153,33 @@ const App = () => {
     <>
       <div className="p-8 pb-4 shrink-0">
         <div className="flex items-center gap-4 mb-8">
-          <div className="w-12 h-12 shrink-0 bg-gradient-to-br from-indigo-600 to-violet-700 rounded-xl flex items-center justify-center text-white shadow-xl shadow-indigo-200">
+          <div className="w-12 h-12 shrink-0 bg-gradient-to-br from-indigo-600 to-violet-700 rounded-xl flex items-center justify-center text-white shadow-xl shadow-indigo-200 dark:shadow-indigo-900/30">
             <CircuitBoard size={24} strokeWidth={2.5} />
           </div>
           <div className="min-w-0">
-            <h1 className="font-extrabold text-2xl text-slate-900 tracking-tight leading-none truncate">{config.projectName}</h1>
-            <span className="text-[10px] font-bold text-slate-400 tracking-wider mt-1 block leading-tight break-words">{config.labName}</span>
+            <h1 className="font-extrabold text-2xl text-slate-900 dark:text-slate-100 tracking-tight leading-none truncate">{config.projectName}</h1>
+            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-wider mt-1 block leading-tight break-words">{config.labName}</span>
           </div>
         </div>
         
-        <div className="flex flex-col gap-2 mb-6">
-          <div className={`px-4 py-3 rounded-xl border flex items-center justify-between ${isLive ? 'bg-emerald-50/50 border-emerald-100 text-emerald-700' : 'bg-amber-50/50 border-amber-100 text-amber-700'}`}>
-            <span className="text-xs font-bold tracking-wider flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${isLive ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`}></div>
+        <div className="flex items-center gap-3 mb-6">
+          {/* Server Status - Rectangle */}
+          <div className={`flex-1 px-4 py-2.5 rounded-xl border-2 transition-colors flex items-center gap-3 ${isLive ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/30' : 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/30'}`}>
+            <div className={`w-2 h-2 rounded-full shrink-0 ${isLive ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`}></div>
+            <span className={`text-sm font-bold tracking-wide ${isLive ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400'}`}>
               {isLive ? 'Online' : 'Offline'}
             </span>
-            <Activity size={14} />
+            <Activity size={16} className={`ml-auto ${isLive ? 'text-emerald-600 dark:text-emerald-500' : 'text-amber-600 dark:text-amber-500'}`} />
           </div>
+          
+          {/* Theme Toggle Button */}
+          <ThemeToggle theme={themeMode} onToggle={cycleTheme} />
         </div>
       </div>
       
       {/* Menu section - fixed, no scroll */}
       <nav className="px-6 space-y-2 shrink-0">
-        <div className="px-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Menu</div>
+        <div className="px-2 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Menu</div>
         <NavItem 
           icon={<LayoutPanelTop />} 
           label="Monitor Dashboard" 
@@ -170,7 +202,7 @@ const App = () => {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="ml-1 mt-2 mb-2 pl-2 border-l-2 border-slate-200"
+              className="ml-1 mt-2 mb-2 pl-2 border-l-2 border-slate-200 dark:border-slate-700/50"
             >
               {renderTree(fileTree)}
             </motion.div>
@@ -180,29 +212,31 @@ const App = () => {
         <div className="flex-1"></div>
       )}
 
-      <div className="p-3 border-t border-slate-200 mx-4 shrink-0">
+      <div className="p-3 border-t border-slate-200 dark:border-slate-700 mx-4 shrink-0">
         <div className="text-xs font-medium flex items-center justify-between gap-3">
           <a 
             href="https://github.com/SheepTAO/labdash"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 text-slate-400 hover:text-indigo-600 transition-colors group"
+            className="flex items-center gap-2 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors group"
             title="View project on GitHub"
           >
-            <Tag size={12} className="text-indigo-400 group-hover:text-indigo-500"/> 
+            <Tag size={12} className="text-indigo-400 dark:text-indigo-500 group-hover:text-indigo-500 dark:group-hover:text-indigo-400"/> 
             <span>{config.version}</span>
           </a>
-          <a 
-            href={`mailto:${config.admin.email}`}
-            className="text-slate-500 hover:text-indigo-600 flex items-center gap-1.5 transition-colors group"
-            title={`Contact ${config.admin.name}`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400 group-hover:text-indigo-500 shrink-0">
-              <circle cx="12" cy="8" r="5"/>
-              <path d="M20 21a8 8 0 1 0-16 0"/>
-            </svg>
-            <span className="truncate">{config.admin.name}</span>
-          </a>
+          {config.admin?.name && (
+            <a 
+              href={`mailto:${config.admin.email}`}
+              className="text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1.5 transition-colors group"
+              title={`Contact ${config.admin.name}`}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400 dark:text-slate-500 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 shrink-0">
+                <circle cx="12" cy="8" r="5"/>
+                <path d="M20 21a8 8 0 1 0-16 0"/>
+              </svg>
+              <span className="truncate">{config.admin.name}</span>
+            </a>
+          )}
         </div>
       </div>
     </>
@@ -231,14 +265,14 @@ const App = () => {
         <div key={node.path} className="mb-1">
           <div 
             onClick={() => toggleFolder(node.path)}
-            className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-slate-50 cursor-pointer text-slate-600 font-bold text-xs select-none group transition-colors"
+            className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer text-slate-600 dark:text-slate-300 font-bold text-xs select-none group transition-colors"
             style={{ paddingLeft: `${paddingLeft}px` }}
           >
             <div className="flex items-center gap-2">
-              {isExpanded ? <FolderOpen size={14} className="text-indigo-500"/> : <Folder size={14} className="text-slate-400 group-hover:text-indigo-400"/>}
+              {isExpanded ? <FolderOpen size={14} className="text-indigo-500 dark:text-indigo-400"/> : <Folder size={14} className="text-slate-400 dark:text-slate-500 group-hover:text-indigo-400 dark:group-hover:text-indigo-500"/>}
               <span>{node.name}</span>
             </div>
-            {isExpanded ? <ChevronDown size={12} className="text-slate-400"/> : <ChevronRight size={12} className="text-slate-400"/>}
+            {isExpanded ? <ChevronDown size={12} className="text-slate-400 dark:text-slate-500"/> : <ChevronRight size={12} className="text-slate-400 dark:text-slate-500"/>}
           </div>
           
           {isExpanded && (
@@ -257,13 +291,13 @@ const App = () => {
       <div 
         key={node.path}
         onClick={() => handleSelectFile(node)}
-        className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer text-xs font-medium transition-all ${isSelected ? 'bg-indigo-50 text-indigo-600 shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'}`}
+        className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer text-xs font-medium transition-all ${isSelected ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-700 dark:hover:text-slate-300'}`}
         style={{ paddingLeft: `${paddingLeft}px` }}
       >
         {isDefaultDoc ? (
-          <Home size={14} className={`shrink-0 ${isSelected ? "text-indigo-500" : "text-amber-500"}`} />
+          <Home size={14} className={`shrink-0 ${isSelected ? "text-indigo-500 dark:text-indigo-400" : "text-amber-500 dark:text-amber-400"}`} />
         ) : (
-          <FileText size={14} className={`shrink-0 ${isSelected ? "text-indigo-500" : "text-slate-400"}`} />
+          <FileText size={14} className={`shrink-0 ${isSelected ? "text-indigo-500 dark:text-indigo-400" : "text-slate-400 dark:text-slate-500"}`} />
         )}
         <span className="truncate">{node.name.replace(/\.md$/i, '')}</span>
       </div>
@@ -271,12 +305,12 @@ const App = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex font-sans text-slate-800 selection:bg-indigo-100 selection:text-indigo-700">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0f172a] flex font-sans text-slate-800 dark:text-slate-200 selection:bg-indigo-100 dark:selection:bg-indigo-900/30 selection:text-indigo-700 dark:selection:text-indigo-400 transition-colors duration-300">
       
       {/* Mobile Menu Button */}
       <button 
         onClick={() => setMobileMenuOpen(true)}
-        className="fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-md border border-slate-200 xl:hidden text-slate-600 hover:text-indigo-600"
+        className="fixed top-4 left-4 z-50 p-2 bg-white dark:bg-slate-800 rounded-lg shadow-md border border-slate-200 dark:border-slate-700 xl:hidden text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
       >
         <Menu size={20} />
       </button>
@@ -290,17 +324,17 @@ const App = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setMobileMenuOpen(false)}
-              className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40 xl:hidden"
+              className="fixed inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm z-40 xl:hidden"
             />
             <motion.aside 
               initial={{ x: -300 }}
               animate={{ x: 0 }}
               exit={{ x: -300 }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="w-72 bg-white border-r border-slate-100 flex flex-col fixed h-full z-50 xl:hidden shadow-2xl"
+              className="w-72 bg-white dark:bg-[#1e293b] border-r border-slate-100 dark:border-slate-700/50 flex flex-col fixed h-full z-50 xl:hidden shadow-2xl"
             >
                <div className="p-4 flex justify-end">
-                 <button onClick={() => setMobileMenuOpen(false)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-400">
+                 <button onClick={() => setMobileMenuOpen(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-400 dark:text-slate-500 transition-colors">
                    <X size={20} />
                  </button>
                </div>
@@ -311,12 +345,12 @@ const App = () => {
       </AnimatePresence>
 
       {/* Desktop Sidebar */}
-      <aside className="w-72 bg-white/80 border-r border-slate-100 flex flex-col fixed h-full z-30 hidden xl:flex backdrop-blur-sm">
+      <aside className="w-72 bg-white/90 dark:bg-[#1e293b]/90 border-r border-slate-100 dark:border-slate-700/50 flex flex-col fixed h-full z-30 hidden xl:flex backdrop-blur-sm">
         {renderSidebarContent()}
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 min-w-0 xl:ml-72 overflow-y-auto overflow-x-hidden bg-slate-50/50 h-screen">
+      <main className="flex-1 min-w-0 xl:ml-72 overflow-y-auto overflow-x-hidden bg-slate-50/50 dark:bg-[#0f172a]/50 h-screen transition-colors duration-300">
         <div className="w-full h-full">
           <AnimatePresence mode="wait">
             {activeTab === 'monitor' ? (

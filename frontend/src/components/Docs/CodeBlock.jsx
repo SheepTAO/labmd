@@ -17,16 +17,16 @@ const CodeBlock = ({ node, inline, className, children, ...props }) => {
 
   if (!inline && match) {
     return (
-      <div className="relative group my-4 rounded-xl shadow-sm border border-slate-200/60 max-w-full bg-[#282c34] overflow-hidden">
+      <div className="relative group my-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-200 dark:bg-slate-800 max-w-full overflow-hidden">
         {/* Floating Language Label / Copy Button */}
         <div className="absolute right-2.5 top-2.5 z-20">
             <button
                 onClick={handleCopy}
                 className={`
-                  group/btn relative flex items-center justify-center px-2.5 py-1.5 rounded-lg transition-all duration-200 border backdrop-blur-md
+                  group/btn relative flex items-center justify-center px-2.5 py-1.5 rounded-lg transition-colors duration-200 border
                   ${copied 
-                    ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400' 
-                    : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10 hover:text-slate-200'
+                    ? 'bg-emerald-100 dark:bg-emerald-500/20 border-emerald-300 dark:border-emerald-500/40 text-emerald-700 dark:text-emerald-400' 
+                    : 'bg-slate-50 dark:bg-slate-900/80 border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
                   }
                 `}
             >
@@ -36,7 +36,7 @@ const CodeBlock = ({ node, inline, className, children, ...props }) => {
                 
                 {/* Tooltip */}
                 {!copied && (
-                   <div className="absolute top-full right-0 mt-2 px-2 py-1 bg-black/80 text-white text-[10px] rounded opacity-0 group-hover/btn:opacity-100 pointer-events-none whitespace-nowrap transition-opacity backdrop-blur-sm shadow-lg">
+                   <div className="absolute top-full right-0 mt-2 px-2 py-1 bg-black/80 dark:bg-slate-950/90 text-white text-[10px] rounded opacity-0 group-hover/btn:opacity-100 pointer-events-none whitespace-nowrap transition-opacity backdrop-blur-sm shadow-lg">
                       Click to Copy
                    </div>
                 )}
@@ -51,16 +51,19 @@ const CodeBlock = ({ node, inline, className, children, ...props }) => {
             PreTag="div"
             customStyle={{
               margin: 0,
-              padding: '0.75rem 1rem 0.75rem 1rem', // Minimal padding
+              padding: '0.75rem 1rem 0.75rem 1rem',
               borderRadius: '0',
               background: 'transparent',
-              fontSize: '1.125rem', // Matches prose-lg (18px)
+              fontSize: '1.125rem',
               lineHeight: '1.4',
+              textShadow: 'none', // Remove text shadow
             }}
             codeTagProps={{
               style: { 
                 fontFamily: "'JetBrains Mono', 'Fira Code', Consolas, monospace",
-                color: '#abb2bf'
+                background: 'transparent',
+                backgroundColor: 'transparent',
+                textShadow: 'none' // Remove text shadow
               }
             }}
           >
@@ -71,8 +74,18 @@ const CodeBlock = ({ node, inline, className, children, ...props }) => {
     );
   }
 
+  // Inline code
   return (
-    <code className={className} style={{ backgroundColor: '#e2e8f0', color: '#1e293b', padding: '0.15rem 0.25rem', borderRadius: '0.375rem', border: '1px solid #cbd5e1', fontWeight: '500', fontSize: '0.9em' }} {...props}>
+    <code 
+      className={`
+        ${className}
+        px-1.5 py-0.5 rounded-md font-medium text-[0.9em]
+        bg-slate-100 dark:bg-slate-800
+        text-slate-800 dark:text-slate-200
+        border border-slate-200 dark:border-slate-700
+      `} 
+      {...props}
+    >
       {children}
     </code>
   );

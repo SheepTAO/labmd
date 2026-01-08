@@ -58,41 +58,45 @@ const DocsView = memo(({ selectedFile, content, loading }) => {
         {/* Content Area */}
         <div className="flex-1 p-4 md:p-8 lg:p-16 relative min-w-0">
           {loading ? (
-            <div className="absolute inset-0 flex items-center justify-center text-slate-400 gap-2 h-96">
+            <div className="absolute inset-0 flex items-center justify-center text-slate-400 dark:text-slate-500 gap-2 h-96">
               <RefreshCw className="animate-spin" /> Loading...
             </div>
           ) : selectedFile ? (
             <div className="max-w-5xl mx-auto">
               {/* Metadata Header */}
-              <div className="mb-10 pb-8 border-b border-slate-200/60">
-                  <h1 className="text-4xl font-extrabold text-slate-900 mb-6 tracking-tight">{selectedFile.name.replace(/\.md$/i, '')}</h1>
-                  <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-500">
-                    <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-slate-200 shadow-sm">
-                        <User size={14} className="text-indigo-500"/>
-                        <span>Created by <span className="text-slate-700 font-bold">{selectedFile.owner || 'Unknown'}</span></span>
+              <div className="mb-10 pb-8 border-b border-slate-200 dark:border-slate-700">
+                  <h1 className="text-4xl font-extrabold text-slate-900 dark:text-slate-100 mb-6 tracking-tight">{selectedFile.name.replace(/\.md$/i, '')}</h1>
+                  <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-500 dark:text-slate-400">
+                    <div className="flex items-center gap-2 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <User size={14} className="text-indigo-500 dark:text-indigo-400"/>
+                        <span>Created by <span className="text-slate-700 dark:text-slate-300 font-bold">{selectedFile.owner || 'Unknown'}</span></span>
                     </div>
-                    <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-slate-200 shadow-sm">
-                        <Clock size={14} className="text-indigo-500"/>
-                        <span>Updated <span className="text-slate-700 font-bold">{selectedFile.modTime || 'Unknown'}</span></span>
+                    <div className="flex items-center gap-2 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <Clock size={14} className="text-indigo-500 dark:text-indigo-400"/>
+                        <span>Updated <span className="text-slate-700 dark:text-slate-300 font-bold">{selectedFile.modTime || 'Unknown'}</span></span>
                     </div>
                   </div>
               </div>
 
               <article ref={contentRef} className="prose prose-slate prose-lg max-w-none 
-                prose-headings:font-sans prose-headings:text-slate-900 prose-headings:scroll-mt-20
+                prose-headings:font-sans prose-headings:text-slate-900 dark:prose-headings:text-slate-100 prose-headings:scroll-mt-20
                 prose-h1:text-4xl prose-h1:font-black prose-h1:mt-12 prose-h1:mb-6 prose-h1:tracking-tight prose-h1:leading-tight
                 prose-h2:text-2xl prose-h2:font-bold prose-h2:mt-12 prose-h2:mb-6 prose-h2:tracking-tight prose-h2:leading-snug
                 prose-h3:text-xl prose-h3:font-semibold prose-h3:mt-8 prose-h3:mb-4 prose-h3:leading-snug
-                prose-p:text-slate-600 prose-p:leading-relaxed prose-p:mb-4 prose-p:break-words
-                prose-strong:font-semibold prose-strong:text-slate-800
-                prose-a:text-indigo-600 hover:prose-a:text-indigo-500 prose-a:no-underline hover:prose-a:underline prose-a:break-all
+                prose-p:text-slate-600 dark:prose-p:text-slate-300 prose-p:leading-relaxed prose-p:mb-4 prose-p:break-words
+                prose-strong:font-semibold prose-strong:text-slate-800 dark:prose-strong:text-slate-200
+                prose-a:text-indigo-600 dark:prose-a:text-indigo-400 hover:prose-a:text-indigo-500 dark:hover:prose-a:text-indigo-300 prose-a:no-underline hover:prose-a:underline prose-a:break-all
                 prose-pre:my-0 prose-pre:p-0 prose-pre:bg-transparent prose-pre:shadow-none prose-pre:border-none prose-pre:overflow-visible
-                prose-code:before:content-none prose-code:after:content-none
+                prose-code:before:content-none prose-code:after:content-none prose-code:text-slate-800 dark:prose-code:text-slate-200 prose-code:bg-slate-100 dark:prose-code:bg-slate-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded
                 prose-img:rounded-xl prose-img:my-8 prose-img:max-w-full prose-img:mx-auto prose-img:block
-                prose-blockquote:border-l-4 prose-blockquote:border-indigo-500 prose-blockquote:bg-indigo-100/50 prose-blockquote:py-2 prose-blockquote:px-6 prose-blockquote:rounded-lg prose-blockquote:not-italic prose-blockquote:text-slate-700 prose-blockquote:my-4
-                prose-ul:list-disc prose-ul:pl-6 prose-ul:marker:text-indigo-300
-                prose-ol:list-decimal prose-ol:pl-6 prose-ol:marker:text-indigo-500
-                prose-li:mb-2
+                prose-blockquote:border-l-4 prose-blockquote:border-indigo-500 dark:prose-blockquote:border-indigo-600 prose-blockquote:bg-indigo-50 dark:prose-blockquote:bg-indigo-950/30 prose-blockquote:py-2 prose-blockquote:px-6 prose-blockquote:rounded-lg prose-blockquote:not-italic prose-blockquote:text-slate-700 dark:prose-blockquote:text-slate-300 prose-blockquote:my-4
+                prose-ul:list-disc prose-ul:pl-6 prose-ul:marker:text-indigo-400 dark:prose-ul:marker:text-indigo-500
+                prose-ol:list-decimal prose-ol:pl-6 prose-ol:marker:text-indigo-500 dark:prose-ol:marker:text-indigo-400
+                prose-li:mb-2 prose-li:text-slate-600 dark:prose-li:text-slate-300
+                prose-table:border-collapse prose-table:w-full
+                prose-th:bg-slate-100 dark:prose-th:bg-slate-800 prose-th:text-slate-900 dark:prose-th:text-slate-100 prose-th:p-3 prose-th:border dark:prose-th:border-slate-700
+                prose-td:p-3 prose-td:border dark:prose-td:border-slate-700 prose-td:text-slate-700 dark:prose-td:text-slate-300
+                prose-hr:border-slate-200 dark:prose-hr:border-slate-700
               ">
                   <ReactMarkdown 
                     remarkPlugins={[remarkGfm, remarkMath]}
@@ -107,21 +111,21 @@ const DocsView = memo(({ selectedFile, content, loading }) => {
               </article>
             </div>
           ) : (
-            <div className="h-full flex flex-col items-center justify-center text-slate-400 min-h-[60vh]">
-                <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-8 shadow-sm border border-slate-100">
-                  <BookOpen size={48} className="text-slate-300" />
+            <div className="h-full flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 min-h-[60vh]">
+                <div className="w-24 h-24 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center mb-8 shadow-sm border border-slate-100 dark:border-slate-700">
+                  <BookOpen size={48} className="text-slate-300 dark:text-slate-600" />
                 </div>
-                <h3 className="text-xl font-bold text-slate-700 mb-3">No Documentation Available</h3>
-                <p className="text-slate-400 max-w-sm text-center leading-relaxed">Please create Markdown files in the configured docs directory to get started.</p>
+                <h3 className="text-xl font-bold text-slate-700 dark:text-slate-300 mb-3">No Documentation Available</h3>
+                <p className="text-slate-400 dark:text-slate-500 max-w-sm text-center leading-relaxed">Please create Markdown files in the configured docs directory to get started.</p>
             </div>
           )}
         </div>
 
         {/* Right TOC Sidebar */}
         {!loading && selectedFile && headings.length > 0 && (
-          <div className="hidden 2xl:block w-72 p-8 border-l border-slate-200/60 bg-slate-50/30 sticky top-0 h-screen overflow-y-auto custom-scrollbar">
+          <div className="hidden 2xl:block w-72 p-8 border-l border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 sticky top-0 h-screen overflow-y-auto custom-scrollbar">
              <div className="mt-4">
-                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-6 flex items-center gap-2">
+                <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-6 flex items-center gap-2">
                   <ListTree size={14} />
                   On this page
                 </h4>
@@ -130,12 +134,12 @@ const DocsView = memo(({ selectedFile, content, loading }) => {
                     <li key={i}>
                       <button 
                         onClick={() => scrollToHeading(h.id)}
-                        className={`text-sm text-left w-full transition-all hover:text-indigo-600 line-clamp-2 ${
+                        className={`text-sm text-left w-full transition-all hover:text-indigo-600 dark:hover:text-indigo-400 line-clamp-2 ${
                           h.level === 1 
-                            ? 'font-bold text-slate-800 text-base' 
+                            ? 'font-bold text-slate-800 dark:text-slate-200 text-base' 
                             : h.level === 2 
-                            ? 'font-semibold text-slate-700' 
-                            : 'font-normal text-slate-500'
+                            ? 'font-semibold text-slate-700 dark:text-slate-300' 
+                            : 'font-normal text-slate-500 dark:text-slate-400'
                         }`}
                         style={{ paddingLeft: `${(h.level - 1) * 12}px` }}
                       >

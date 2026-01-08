@@ -19,13 +19,13 @@ type Config struct {
 		Email string `json:"email"`
 	} `json:"admin"`
 	Monitor struct {
-		IntervalCRG      int     `json:"intervalCRGSec"`     // CPU, RAM, GPU (seconds)
-		IntervalDisk     float64 `json:"intervalDiskHours"`  // Disk (hours)
-		IdleTimeout      int     `json:"idleTimeoutSec"`     // Idle mode timeout (seconds)
-		IdleIntervalCRG  int     `json:"idleIntervalCRGSec"` // CRG interval when idle (seconds)
-		HistoryCPU       int     `json:"historyCPU"`
-		HistoryGPU       int     `json:"historyGPU"`
-		HistoryRAM       int     `json:"historyRAM"`
+		IntervalCRG     int     `json:"intervalCRGSec"`     // CPU, RAM, GPU (seconds)
+		IntervalDisk    float64 `json:"intervalDiskHours"`  // Disk (hours)
+		IdleTimeout     int     `json:"idleTimeoutSec"`     // Idle mode timeout (seconds)
+		IdleIntervalCRG int     `json:"idleIntervalCRGSec"` // CRG interval when idle (seconds)
+		HistoryCPU      int     `json:"historyCPU"`
+		HistoryGPU      int     `json:"historyGPU"`
+		HistoryRAM      int     `json:"historyRAM"`
 	} `json:"monitor"`
 	Disk struct {
 		IncludedPartitions map[string]string `json:"includedPartitions"` // Path -> Label
@@ -45,8 +45,8 @@ func LoadConfig(configPath string) {
 	globalConfig.DocsPath = "/home/labdash/docs" // Default docs folder
 	globalConfig.DocsDepth = 4                   // Default depth 4
 	globalConfig.DefaultDoc = "index.md"         // Default homepage
-	globalConfig.Admin.Name = "Admin"
-	globalConfig.Admin.Email = "admin@example.com"
+	globalConfig.Admin.Name = ""
+	globalConfig.Admin.Email = ""
 	globalConfig.Version = Version
 
 	// Monitor defaults

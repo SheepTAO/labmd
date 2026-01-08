@@ -25,20 +25,20 @@ const MetricCard = ({ title, value, unit, icon, accent, footerTitle, footerSubTi
   };
 
   return (
-    <div className={`bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col h-48 justify-between relative overflow-hidden group ${className}`}>
+    <div className={`bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col h-48 justify-between relative overflow-hidden group ${className}`}>
       
       <div className="flex justify-between items-center relative z-10 mb-2">
         <div className="flex items-center gap-3">
             <div className={`p-2.5 rounded-xl ${theme}`}>
                 {icon}
             </div>
-            <h3 className="font-bold text-slate-700 text-lg">{title}</h3>
+            <h3 className="font-bold text-slate-700 dark:text-slate-300 text-lg">{title}</h3>
         </div>
         <div className="text-right">
             <div className="flex items-baseline justify-end gap-1">
-               {valueLabel && <span className="text-xs font-bold text-slate-400 uppercase tracking-wider mr-1">{valueLabel}</span>}
+               {valueLabel && <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mr-1">{valueLabel}</span>}
                <span className={`text-4xl font-black tracking-tighter leading-none ${getValueColor(value)}`}>{value}</span>
-               <span className="text-sm font-bold text-slate-400 ml-1">{unit}</span>
+               <span className="text-sm font-bold text-slate-400 dark:text-slate-500 ml-1">{unit}</span>
             </div>
         </div>
       </div>
@@ -70,7 +70,7 @@ const MetricCard = ({ title, value, unit, icon, accent, footerTitle, footerSubTi
 
          {variant === 'progress' && (
              <div className="h-10 flex items-center">
-                <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                <div className="w-full bg-slate-200 dark:bg-slate-600 rounded-full h-3 overflow-hidden">
                     <motion.div 
                        initial={{ width: 0 }}
                        animate={{ width: `${Math.min(100, Math.max(0, value))}%` }}
@@ -82,9 +82,9 @@ const MetricCard = ({ title, value, unit, icon, accent, footerTitle, footerSubTi
          )}
       </div>
 
-      <div className="relative z-10 border-t border-slate-100 pt-3">
-        <div className="text-sm font-bold text-slate-700 truncate">{footerTitle}</div>
-        <div className="text-xs font-medium text-slate-400 truncate">{footerSubTitle}</div>
+      <div className="relative z-10 border-t border-slate-100 dark:border-slate-700 pt-3">
+        <div className="text-sm font-bold text-slate-700 dark:text-slate-300 truncate">{footerTitle}</div>
+        <div className="text-xs font-medium text-slate-400 dark:text-slate-500 truncate">{footerSubTitle}</div>
       </div>
     </div>
   );
