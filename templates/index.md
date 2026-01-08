@@ -133,6 +133,7 @@ Edit `/etc/labmd/config.json` to customize settings. The file only contains your
   "labName": "Research Laboratory", 
   "port": 8088,
   "docsPath": "/home/labmd/docs",
+  "defaultDoc": "index.md",
   "admin": {
     "name": "John Doe",
     "email": "john@lab.com"

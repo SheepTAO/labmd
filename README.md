@@ -204,13 +204,13 @@ labmd server                    # Normal mode (loads frontend from dist)
 labmd server --skip-frontend    # Skip frontend check (for custom frontend dev)
 
 # Display system and configuration information
-labmd info
+labmd --info
 
 # Show version
-labmd version
+labmd --version
 
 # Show help
-labmd help
+labmd --help
 ```
 
 ## Backend API

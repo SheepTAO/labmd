@@ -47,71 +47,83 @@ type HistoryStats struct {
 
 // --- Main Function ---
 func main() {
+	// Define flags
+	versionFlag := flag.Bool("version", false, "Show version information")
+	vFlag := flag.Bool("v", false, "Show version information (shorthand)")
+	infoFlag := flag.Bool("info", false, "Display configuration and system information")
+
 	flag.Usage = func() {
 		fmt.Fprintf(flag.CommandLine.Output(), `LabMD - Lab Monitoring & Documentation
 
 Usage:
-  labmd <command>
+  labmd [options]
+  labmd server [options]
+
+Options:
+  --version, -v    Show version information
+  --info           Display configuration and system information
+  --help, -h       Show this help message
 
 Commands:
-  server       Start the LabMD server
-  info         Display configuration and system information
-  version      Show version information
-  help         Show this help message
+  server           Start the LabMD server
+    --skip-frontend  Skip frontend directory check (for local frontend development)
 
 Version: %s
 Build Time: %s
 `, Version, BuildTime)
 	}
 
-	if len(os.Args) < 2 {
+	// Check if first argument is a subcommand
+	if len(os.Args) > 1 && !flag.Parsed() {
+		switch os.Args[1] {
+		case "server":
+			serverCmd := flag.NewFlagSet("server", flag.ExitOnError)
+			skipFrontend := serverCmd.Bool("skip-frontend", false, "Skip frontend directory check (for local frontend development)")
+			serverCmd.Usage = func() {
+				fmt.Fprintf(serverCmd.Output(), "Usage: labmd server [options]\n\nStart the LabMD server\n\nOptions:\n")
+				serverCmd.PrintDefaults()
+			}
+			serverCmd.Parse(os.Args[2:])
+			LoadConfig(ConfigPath)
+			runServer(*skipFrontend)
+			return
+
+		case "dev":
+			if AllowDev != "true" {
+				fmt.Fprintf(os.Stderr, "Unknown command: %s\n\n", os.Args[1])
+				flag.Usage()
+				os.Exit(1)
+			}
+			devCmd := flag.NewFlagSet("dev", flag.ExitOnError)
+			devCmd.Parse(os.Args[2:])
+			startServerDev()
+			return
+		}
+	}
+
+	// Parse flags
+	flag.Parse()
+
+	// Handle flags
+	if *versionFlag || *vFlag {
+		fmt.Println(Version)
+		return
+	}
+
+	if *infoFlag {
+		showInfo()
+		return
+	}
+
+	// No flags or commands provided
+	if flag.NFlag() == 0 && flag.NArg() == 0 {
 		flag.Usage()
 		os.Exit(1)
 	}
 
-	switch os.Args[1] {
-	case "server":
-		serverCmd := flag.NewFlagSet("server", flag.ExitOnError)
-		skipFrontend := serverCmd.Bool("skip-frontend", false, "Skip frontend directory check (for local frontend development)")
-		serverCmd.Usage = func() {
-			fmt.Fprintf(serverCmd.Output(), "Usage: labmd server [options]\n\nStart the LabMD server\n\nOptions:\n")
-			serverCmd.PrintDefaults()
-		}
-		serverCmd.Parse(os.Args[2:])
-		LoadConfig(ConfigPath)
-		runServer(*skipFrontend)
-
-	case "info":
-		infoCmd := flag.NewFlagSet("info", flag.ExitOnError)
-		infoCmd.Usage = func() {
-			fmt.Fprintf(infoCmd.Output(), "Usage: labmd info\n\nDisplay configuration and system information\n")
-		}
-		infoCmd.Parse(os.Args[2:])
-		showInfo()
-
-	case "version":
-		versionCmd := flag.NewFlagSet("version", flag.ExitOnError)
-		versionCmd.Usage = func() {
-			fmt.Fprintf(versionCmd.Output(), "Usage: labmd version\n\nShow version information\n")
-		}
-		versionCmd.Parse(os.Args[2:])
-		fmt.Println(Version)
-
-	case "dev":
-		if AllowDev != "true" {
-			fmt.Fprintf(os.Stderr, "Unknown command: %s\n\n", os.Args[1])
-			flag.Usage()
-			os.Exit(1)
-		}
-		devCmd := flag.NewFlagSet("dev", flag.ExitOnError)
-		devCmd.Parse(os.Args[2:])
-		startServerDev()
-
-	case "help", "-h", "--help":
-		flag.Usage()
-
-	default:
-		fmt.Fprintf(os.Stderr, "Unknown command: %s\n\n", os.Args[1])
+	// Unknown command
+	if flag.NArg() > 0 {
+		fmt.Fprintf(os.Stderr, "Unknown command: %s\n\n", flag.Arg(0))
 		flag.Usage()
 		os.Exit(1)
 	}

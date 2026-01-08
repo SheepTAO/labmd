@@ -272,7 +272,7 @@ if [ "$INSTALL_MODE" = "upgrade" ]; then
     echo -e "${GREEN}║         Upgrade Complete!          ║${NC}"
     echo -e "${GREEN}╚════════════════════════════════════╝${NC}"
     echo
-    echo -e "${BLUE}Upgraded: $CURRENT_VERSION → $NEW_VERSION${NC}"
+    echo -e "${GREEN}Upgraded: $CURRENT_VERSION → $NEW_VERSION${NC}"
 else
     echo -e "${GREEN}╔════════════════════════════════════╗${NC}"
     echo -e "${GREEN}║      Installation Complete!        ║${NC}"
