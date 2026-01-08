@@ -61,7 +61,10 @@ const App = () => {
         const res = await fetch('/api/config');
         if (res.ok) {
           const data = await res.json();
-          setConfig(processConfig(data));
+          const processedConfig = processConfig(data);
+          setConfig(processedConfig);
+          // Update page title with projectName
+          document.title = processedConfig.projectName;
         }
       } catch (err) {
         console.error('Failed to fetch config:', err);
@@ -215,7 +218,7 @@ const App = () => {
       <div className="p-3 border-t border-slate-200 dark:border-slate-700 mx-4 shrink-0">
         <div className="text-xs font-medium flex items-center justify-between gap-3">
           <a 
-            href="https://github.com/SheepTAO/labdash"
+            href="https://github.com/SheepTAO/labmd"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors group"

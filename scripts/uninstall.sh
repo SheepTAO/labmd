@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-# LabDash Uninstall Script
+# LabMD Uninstall Script
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -16,14 +16,14 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 echo -e "${RED}╔════════════════════════════════════╗${NC}"
-echo -e "${RED}║      LabDash Uninstall Script      ║${NC}"
+echo -e "${RED}║       LabMD Uninstall Script       ║${NC}"
 echo -e "${RED}╚════════════════════════════════════╝${NC}"
 echo
 
 # Get docs path from config before removing
 DOCS_PATH=""
-if [ -f "/etc/labdash/config.json" ]; then
-    DOCS_PATH=$(grep -oP '"docsPath":\s*"\K[^"]+' /etc/labdash/config.json 2>/dev/null || echo "")
+if [ -f "/etc/labmd/config.json" ]; then
+    DOCS_PATH=$(grep -oP '"docsPath":\s*"\K[^"]+' /etc/labmd/config.json 2>/dev/null || echo "")
 fi
 
 # Handle documentation directory
@@ -50,10 +50,10 @@ if [ -n "$DOCS_PATH" ] && [ -d "$DOCS_PATH" ]; then
         # Safety check: ensure path is reasonable
         if [[ "$DOCS_PATH" != "/" && "$DOCS_PATH" != "/home" && "$DOCS_PATH" != "/usr" ]]; then
             rm -rf "$DOCS_PATH"
-            # Also remove parent if it's /home/labdash and empty
-            if [[ "$DOCS_PATH" == "/home/labdash"* ]]; then
-                if [ -d "/home/labdash" ] && [ ! "$(ls -A /home/labdash 2>/dev/null)" ]; then
-                    rmdir /home/labdash 2>/dev/null || true
+            # Also remove parent if it's /home/labmd and empty
+            if [[ "$DOCS_PATH" == "/home/labmd"* ]]; then
+                if [ -d "/home/labmd" ] && [ ! "$(ls -A /home/labmd 2>/dev/null)" ]; then
+                    rmdir /home/labmd 2>/dev/null || true
                     echo -e "${GREEN}[OK]${NC} Documentation directory and parent removed"
                 else
                     echo -e "${GREEN}[OK]${NC} Documentation directory removed"
@@ -69,42 +69,42 @@ if [ -n "$DOCS_PATH" ] && [ -d "$DOCS_PATH" ]; then
     fi
 fi
 
-# Remove labdash user if exists
-if id -u labdash > /dev/null 2>&1; then
-    userdel labdash 2>/dev/null || true
-    echo -e "${GREEN}[OK]${NC} Removed labdash user"
+# Remove labmd user if exists
+if id -u labmd > /dev/null 2>&1; then
+    userdel labmd 2>/dev/null || true
+    echo -e "${GREEN}[OK]${NC} Removed labmd user"
 fi
 
 # Stop service
-if systemctl is-active --quiet labdash 2>/dev/null; then
-    echo -e "${YELLOW}Stopping LabDash service...${NC}"
-    systemctl stop labdash
-    systemctl disable labdash
+if systemctl is-active --quiet labmd 2>/dev/null; then
+    echo -e "${YELLOW}Stopping LabMD service...${NC}"
+    systemctl stop labmd
+    systemctl disable labmd
     echo -e "${GREEN}[OK]${NC} Service stopped"
 fi
 
 # Remove systemd service
-if [ -f "/etc/systemd/system/labdash.service" ]; then
-    rm -f /etc/systemd/system/labdash.service
+if [ -f "/etc/systemd/system/labmd.service" ]; then
+    rm -f /etc/systemd/system/labmd.service
     systemctl daemon-reload
     echo -e "${GREEN}[OK]${NC} Systemd service removed"
 fi
 
 # Remove binary
-if [ -f "/usr/local/bin/labdash" ]; then
-    rm -f /usr/local/bin/labdash
+if [ -f "/usr/local/bin/labmd" ]; then
+    rm -f /usr/local/bin/labmd
     echo -e "${GREEN}[OK]${NC} Binary removed"
 fi
 
 # Remove frontend assets and uninstall script
-if [ -d "/usr/share/labdash" ]; then
-    rm -rf /usr/share/labdash
+if [ -d "/usr/share/labmd" ]; then
+    rm -rf /usr/share/labmd
     echo -e "${GREEN}[OK]${NC} Frontend assets removed"
 fi
 
 # Remove config file automatically
-if [ -f "/etc/labdash/config.json" ] || [ -d "/etc/labdash" ]; then
-    rm -rf /etc/labdash
+if [ -f "/etc/labmd/config.json" ] || [ -d "/etc/labmd" ]; then
+    rm -rf /etc/labmd
     echo -e "${GREEN}[OK]${NC} Configuration removed"
 fi
 
@@ -114,5 +114,5 @@ echo -e "${GREEN}╔════════════════════
 echo -e "${GREEN}║        Uninstall Complete!         ║${NC}"
 echo -e "${GREEN}╚════════════════════════════════════╝${NC}"
 echo
-echo -e "${BLUE}Thank you for using LabDash!${NC}"
+echo -e "${BLUE}Thank you for using LabMD!${NC}"
 echo

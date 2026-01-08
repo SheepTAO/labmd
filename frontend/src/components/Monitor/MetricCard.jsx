@@ -3,10 +3,10 @@ import { motion } from 'framer-motion';
 // --- Component: Enhanced Metric Card (Dynamic Waveform) ---
 const MetricCard = ({ title, value, unit, icon, accent, footerTitle, footerSubTitle, chartData, className="", valueLabel="", variant="chart" }) => {
   const accents = {
-    indigo: "text-indigo-600 bg-indigo-50 border-indigo-100",
-    violet: "text-violet-600 bg-violet-50 border-violet-100",
-    cyan: "text-cyan-600 bg-cyan-50 border-cyan-100",
-    rose: "text-rose-600 bg-rose-50 border-rose-100",
+    indigo: "text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 border-indigo-100 dark:border-indigo-500/20",
+    violet: "text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-500/10 border-violet-100 dark:border-violet-500/20",
+    cyan: "text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-500/10 border-cyan-100 dark:border-cyan-500/20",
+    rose: "text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10 border-rose-100 dark:border-rose-500/20",
   };
   const theme = accents[accent];
   

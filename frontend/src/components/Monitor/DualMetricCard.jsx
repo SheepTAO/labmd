@@ -16,7 +16,7 @@ const DualMetricCard = ({
         <div className="flex-1 flex flex-col justify-between relative z-10">
            <div className="flex justify-between items-center mb-2">
               <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-xl text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/30 border-violet-100 dark:border-violet-900/50">
+                  <div className="p-2.5 rounded-xl text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-500/10 border-violet-100 dark:border-violet-500/20">
                      {icon}
                   </div>
                   <h3 className="font-bold text-slate-700 dark:text-slate-300 text-lg">{title}</h3>

@@ -1,22 +1,22 @@
 [Unit]
-Description=LabDash - Lab Monitoring and Documentation System
-Documentation=https://github.com/yourusername/labdash
+Description=LabMD - Lab Monitoring and Documentation
+Documentation=https://github.com/SheepTAO/labmd
 After=network.target
 
 [Service]
 Type=simple
 User=root
-ExecStart=/usr/local/bin/labdash server
+ExecStart=/usr/local/bin/labmd server
 Restart=always
 RestartSec=5
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=labdash
+SyslogIdentifier=labmd
 
 # Security hardening (limited due to need for system monitoring)
 # Note: Requires root access to read all users' home directories and system stats
 PrivateTmp=true
-ReadWritePaths=/etc/labdash
+ReadWritePaths=/etc/labmd
 
 [Install]
 WantedBy=multi-user.target

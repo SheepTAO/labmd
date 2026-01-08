@@ -1,4 +1,4 @@
-module LabDash-backend
+module LabMD-backend
 
 go 1.25.5
 

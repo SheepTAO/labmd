@@ -14,6 +14,6 @@ const CPUSampleInterval = 200 * time.Millisecond
 
 // Projection paths
 const (
-	ConfigPath = "/etc/labdash/config.json"
-	DistPath   = "/usr/share/labdash/dist"
+	ConfigPath = "/etc/labmd/config.json"
+	DistPath   = "/usr/share/labmd/dist"
 )

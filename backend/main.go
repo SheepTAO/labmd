@@ -48,13 +48,13 @@ type HistoryStats struct {
 // --- Main Function ---
 func main() {
 	flag.Usage = func() {
-		fmt.Fprintf(flag.CommandLine.Output(), `LabDash - Lab Monitoring & Documentation Dashboard
+		fmt.Fprintf(flag.CommandLine.Output(), `LabMD - Lab Monitoring & Documentation
 
 Usage:
-  labdash <command>
+  labmd <command>
 
 Commands:
-  server       Start the LabDash server
+  server       Start the LabMD server
   info         Display configuration and system information
   version      Show version information
   help         Show this help message
@@ -74,7 +74,7 @@ Build Time: %s
 		serverCmd := flag.NewFlagSet("server", flag.ExitOnError)
 		skipFrontend := serverCmd.Bool("skip-frontend", false, "Skip frontend directory check (for local frontend development)")
 		serverCmd.Usage = func() {
-			fmt.Fprintf(serverCmd.Output(), "Usage: labdash server [options]\n\nStart the LabDash server\n\nOptions:\n")
+			fmt.Fprintf(serverCmd.Output(), "Usage: labmd server [options]\n\nStart the LabMD server\n\nOptions:\n")
 			serverCmd.PrintDefaults()
 		}
 		serverCmd.Parse(os.Args[2:])
@@ -84,7 +84,7 @@ Build Time: %s
 	case "info":
 		infoCmd := flag.NewFlagSet("info", flag.ExitOnError)
 		infoCmd.Usage = func() {
-			fmt.Fprintf(infoCmd.Output(), "Usage: labdash info\n\nDisplay configuration and system information\n")
+			fmt.Fprintf(infoCmd.Output(), "Usage: labmd info\n\nDisplay configuration and system information\n")
 		}
 		infoCmd.Parse(os.Args[2:])
 		showInfo()
@@ -92,7 +92,7 @@ Build Time: %s
 	case "version":
 		versionCmd := flag.NewFlagSet("version", flag.ExitOnError)
 		versionCmd.Usage = func() {
-			fmt.Fprintf(versionCmd.Output(), "Usage: labdash version\n\nShow version information\n")
+			fmt.Fprintf(versionCmd.Output(), "Usage: labmd version\n\nShow version information\n")
 		}
 		versionCmd.Parse(os.Args[2:])
 		fmt.Println(Version)
@@ -121,7 +121,7 @@ func showInfo() {
 	log.SetOutput(io.Discard)
 	LoadConfig(ConfigPath)
 
-	fmt.Printf("=== LabDash Configuration ===\n")
+	fmt.Printf("=== LabMD Configuration ===\n")
 	fmt.Printf("Version:        %s\n", Version)
 	fmt.Printf("Build Time:     %s\n", BuildTime)
 	fmt.Printf("Project Name:   %s\n", globalConfig.ProjectName)

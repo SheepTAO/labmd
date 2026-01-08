@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-# LabDash Interactive Installation/Upgrade Script
+# LabMD Interactive Installation/Upgrade Script
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -19,18 +19,18 @@ ACTUAL_USER=${SUDO_USER:-$USER}
 ACTUAL_HOME=$(eval echo ~$ACTUAL_USER)
 
 # Get new version from binary
-NEW_VERSION=$(./labdash --version 2>/dev/null || echo "unknown")
+NEW_VERSION=$(./labmd --version 2>/dev/null || echo "unknown")
 
 # Detect existing installation
 CURRENT_VERSION=""
-if [ -f "/usr/local/bin/labdash" ]; then
-    CURRENT_VERSION=$(/usr/local/bin/labdash --version 2>/dev/null || echo "unknown")
+if [ -f "/usr/local/bin/labmd" ]; then
+    CURRENT_VERSION=$(/usr/local/bin/labmd --version 2>/dev/null || echo "unknown")
 fi
 
 # Show version info and installation mode selection
 if [ -n "$CURRENT_VERSION" ]; then
     echo -e "${BLUE}╔════════════════════════════════════╗${NC}"
-    echo -e "${BLUE}║          LabDash Upgrade           ║${NC}"
+    echo -e "${BLUE}║            LabMD Upgrade           ║${NC}"
     echo -e "${BLUE}╚════════════════════════════════════╝${NC}"
     echo
     echo -e "${YELLOW}Existing Installation Detected${NC}"
@@ -42,7 +42,7 @@ if [ -n "$CURRENT_VERSION" ]; then
     echo -e "  ✓ Preserve your configuration (no changes)"
     echo -e "  ✓ Keep documentation intact"
     echo
-    echo -e "${BLUE}What's new?${NC} https://github.com/SheepTAO/labdash/blob/main/CHANGELOG.md"
+    echo -e "${BLUE}What's new?${NC} https://github.com/SheepTAO/labmd/blob/main/CHANGELOG.md"
     echo
     echo -n "Proceed with upgrade? [y/N]: "
     read confirm
@@ -55,7 +55,7 @@ if [ -n "$CURRENT_VERSION" ]; then
     INSTALL_MODE="upgrade"
 else
     echo -e "${BLUE}╔════════════════════════════════════╗${NC}"
-    echo -e "${BLUE}║    LabDash Interactive Installer   ║${NC}"
+    echo -e "${BLUE}║     LabMD Interactive Installer    ║${NC}"
     echo -e "${BLUE}╚════════════════════════════════════╝${NC}"
     echo
     echo -e "Installing version: ${GREEN}$NEW_VERSION${NC}"
@@ -69,14 +69,14 @@ if [ "$INSTALL_MODE" = "fresh" ]; then
     echo
     
     # Project Name
-    echo -n "Project name (default: LabDash): "
+    echo -n "Project name (default: LabMD): "
     read PROJECT_NAME
-    PROJECT_NAME=${PROJECT_NAME:-"LabDash"}
+    PROJECT_NAME=${PROJECT_NAME:-"LabMD"}
     
     # Lab Name
-    echo -n "Lab name (default: Lab Dashboard): "
+    echo -n "Lab name (default: Lab Monitoring & Documentation): "
     read LAB_NAME
-    LAB_NAME=${LAB_NAME:-"Lab Dashboard"}
+    LAB_NAME=${LAB_NAME:-"Lab Monitoring & Documentation"}
 
     # Administrator Info (optional)
     echo -n "Administrator name (optional, press Enter to skip): "
@@ -128,14 +128,14 @@ if [ "$INSTALL_MODE" = "fresh" ]; then
     # Documentation Directory
     echo -e "${YELLOW}Documentation Directory${NC}"
     echo "Where should we store your documentation files?"
-    echo -e "  ${GREEN}1)${NC} /home/labdash/docs ${BLUE}(shared, all users can access)${NC}"
-    echo -e "  ${GREEN}2)${NC} $ACTUAL_HOME/labdash-docs ${BLUE}(personal use, single user)${NC}"
+    echo -e "  ${GREEN}1)${NC} /home/labmd/docs ${BLUE}(shared, all users can access)${NC}"
+    echo -e "  ${GREEN}2)${NC} $ACTUAL_HOME/labmd-docs ${BLUE}(personal use, single user)${NC}"
     echo -n "Choice [1-2] (default 1): "
     read choice
 
     case "$choice" in
-        2) DOCS_PATH="$ACTUAL_HOME/labdash-docs" ;;
-        *) DOCS_PATH="/home/labdash/docs" ;;
+        2) DOCS_PATH="$ACTUAL_HOME/labmd-docs" ;;
+        *) DOCS_PATH="/home/labmd/docs" ;;
     esac
 
     echo -e "${GREEN}[OK]${NC} Configuration complete\n"
@@ -143,9 +143,9 @@ fi
 
 # Stop service if running (only for upgrade)
 if [ "$INSTALL_MODE" = "upgrade" ]; then
-    if command -v systemctl &> /dev/null && systemctl is-active --quiet labdash 2>/dev/null; then
+    if command -v systemctl &> /dev/null && systemctl is-active --quiet labmd 2>/dev/null; then
         echo -e "${YELLOW}[Stopping service...]${NC}"
-        systemctl stop labdash
+        systemctl stop labmd
         echo -e "${GREEN}[OK]${NC} Service stopped"
     fi
 fi
@@ -154,20 +154,20 @@ fi
 echo -e "${YELLOW}[Installing files...]${NC}"
 
 # Create directories
-mkdir -p /etc/labdash
-mkdir -p /usr/share/labdash
+mkdir -p /etc/labmd
+mkdir -p /usr/share/labmd
 
 # Install binary and frontend
-cp labdash /usr/local/bin/
-chmod +x /usr/local/bin/labdash
+cp labmd /usr/local/bin/
+chmod +x /usr/local/bin/labmd
 echo -e "${GREEN}[OK]${NC} Binary installed"
 
-cp -r dist /usr/share/labdash/
+cp -r dist /usr/share/labmd/
 echo -e "${GREEN}[OK]${NC} Frontend installed"
 
 # Copy uninstall script
-cp uninstall.sh /usr/share/labdash/
-chmod +x /usr/share/labdash/uninstall.sh
+cp uninstall.sh /usr/share/labmd/
+chmod +x /usr/share/labmd/uninstall.sh
 
 # Setup docs directory (only for fresh install)
 if [ "$INSTALL_MODE" = "fresh" ]; then
@@ -177,23 +177,23 @@ if [ "$INSTALL_MODE" = "fresh" ]; then
         echo -e "${GREEN}[OK]${NC} Created docs directory: $DOCS_PATH"
     fi
     
-    if [ "$DOCS_PATH" = "/home/labdash/docs" ]; then
+    if [ "$DOCS_PATH" = "/home/labmd/docs" ]; then
         # Shared directory setup
-        # Create labdash user if needed
-        if ! id -u labdash > /dev/null 2>&1; then
-            useradd -r -d /home/labdash -s /bin/bash labdash
-            echo -e "${GREEN}[OK]${NC} Created labdash user"
+        # Create labmd user if needed
+        if ! id -u labmd > /dev/null 2>&1; then
+            useradd -r -d /home/labmd -s /bin/bash labmd
+            echo -e "${GREEN}[OK]${NC} Created labmd user"
         fi
         
         # Set shared directory permissions
-        chown -R labdash:labdash /home/labdash
-        chmod 1777 /home/labdash
+        chown -R labmd:labmd /home/labmd
+        chmod 1777 /home/labmd
         chmod 1777 "$DOCS_PATH"
         find "$DOCS_PATH" -type d -exec chmod 1777 {} \; 2>/dev/null || true
         find "$DOCS_PATH" -type f -exec chmod 666 {} \; 2>/dev/null || true
         
         if command -v setfacl &> /dev/null; then
-            setfacl -R -m d:u::rwx,d:g::rwx,d:o::rwx /home/labdash 2>/dev/null || true
+            setfacl -R -m d:u::rwx,d:g::rwx,d:o::rwx /home/labmd 2>/dev/null || true
             echo -e "${GREEN}[OK]${NC} ACL permissions configured"
         fi
         
@@ -221,7 +221,7 @@ else
     # Fresh install: generate minimal config
     if [ -n "$ADMIN_NAME" ]; then
         # With admin info
-        cat > /etc/labdash/config.json << EOF
+        cat > /etc/labmd/config.json << EOF
 {
   "projectName": "$PROJECT_NAME",
   "labName": "$LAB_NAME",
@@ -235,7 +235,7 @@ else
 EOF
     else
         # Without admin info
-        cat > /etc/labdash/config.json << EOF
+        cat > /etc/labmd/config.json << EOF
 {
   "projectName": "$PROJECT_NAME",
   "labName": "$LAB_NAME",
@@ -245,22 +245,22 @@ EOF
 EOF
     fi
     
-    chmod 644 /etc/labdash/config.json
+    chmod 644 /etc/labmd/config.json
     echo -e "${GREEN}[OK]${NC} Configuration created"
 fi
 
 # Install and start systemd service
 if command -v systemctl &> /dev/null; then
-    cp labdash.service /etc/systemd/system/
+    cp labmd.service /etc/systemd/system/
     systemctl daemon-reload
     echo -e "${GREEN}[OK]${NC} Service installed"
     
     echo
-    echo -n "Start LabDash service now? [Y/n]: "
+    echo -n "Start LabMD service now? [Y/n]: "
     read start
     if [ "$start" != "n" ] && [ "$start" != "N" ]; then
-        systemctl enable labdash
-        systemctl start labdash
+        systemctl enable labmd
+        systemctl start labmd
         echo -e "${GREEN}[OK]${NC} Service started"
     fi
 fi
@@ -282,16 +282,16 @@ fi
 echo
 echo -e "${BLUE}[Summary]${NC}"
 echo -e "  Version: $NEW_VERSION"
-echo -e "  Config:  /etc/labdash/config.json"
+echo -e "  Config:  /etc/labmd/config.json"
 
 if [ "$INSTALL_MODE" = "fresh" ]; then
     echo -e "  Docs:    $DOCS_PATH"
     echo -e "  URL:     ${GREEN}http://localhost:$PORT${NC}"
     
-    if [ "$DOCS_PATH" = "/home/labdash/docs" ]; then
+    if [ "$DOCS_PATH" = "/home/labmd/docs" ]; then
         echo
         echo -e "${YELLOW}[Shared Directory Usage]${NC}"
-        echo -e "  * ${BLUE}/home/labdash/docs${NC} - All users can read/write"
+        echo -e "  * ${BLUE}/home/labmd/docs${NC} - All users can read/write"
         echo -e "  * Sticky bit enabled: only file owner can delete their own files"
     fi
 fi
@@ -299,13 +299,13 @@ fi
 echo
 if command -v systemctl &> /dev/null; then
     echo -e "${BLUE}[Commands]${NC}"
-    echo -e "  Status:  sudo systemctl status labdash"
-    echo -e "  Start:   sudo systemctl start labdash"
-    echo -e "  Stop:    sudo systemctl stop labdash"
-    echo -e "  Restart: sudo systemctl restart labdash"
-    echo -e "  Logs:    sudo journalctl -u labdash -f"
+    echo -e "  Status:  sudo systemctl status labmd"
+    echo -e "  Start:   sudo systemctl start labmd"
+    echo -e "  Stop:    sudo systemctl stop labmd"
+    echo -e "  Restart: sudo systemctl restart labmd"
+    echo -e "  Logs:    sudo journalctl -u labmd -f"
     echo
-    echo -e "  ${RED}Uninstall: sudo /usr/share/labdash/uninstall.sh${NC}"
+    echo -e "  ${RED}Uninstall: sudo /usr/share/labmd/uninstall.sh${NC}"
 fi
 
 echo

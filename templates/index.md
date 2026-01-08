@@ -1,39 +1,45 @@
-# Welcome to LabDash
+# Welcome to LabMD
 
 Welcome to your lab monitoring and documentation system!
 
 ## Getting Started
 
-LabDash provides real-time system monitoring and a powerful documentation system for your lab environment.
+LabMD provides real-time system monitoring and a powerful documentation system for your lab environment.
 
 ### Features
 
-- **Real-time Monitoring**: Track CPU, GPU, RAM, and disk usage across all lab servers
+- **Real-time Monitoring**: Track CPU, GPU, RAM, and disk usage with adaptive idle mode for power saving
 - **Documentation System**: Organize your lab documentation, protocols, and notes with Markdown
 - **Beautiful UI**: Modern glassmorphism design with smooth animations
 - **Math Support**: Write equations with KaTeX (inline: $E=mc^2$, block: $$\int_0^\infty e^{-x^2} dx$$)
 - **Code Highlighting**: Syntax highlighting for 100+ programming languages
 - **File Tree**: Hierarchical navigation with nested folders
+- **Idle Mode**: Automatically reduces monitoring frequency when no one is viewing to save resources
 
 ## Quick Start
 
 ### 1. View System Stats
 Click **"Monitor Dashboard"** to see real-time metrics:
 - CPU load and usage percentage
-- GPU utilization (if available)
+- GPU utilization and memory (NVIDIA GPUs)
 - Memory consumption
 - Disk space by partition
 - User home directory sizes
+
+**Smart Monitoring:**
+- Active mode: Updates every 2 seconds when you're viewing
+- Idle mode: Reduces to 5-minute intervals after 60 seconds of inactivity
+- Instant wake: Returns to active mode when you access the page
 
 ### 2. Add Documentation
 Create Markdown files in your documentation directory:
 
 ```bash
 # Personal installation
-cd ~/labdash-docs
+cd ~/labmd-docs
 
 # Shared installation
-cd /home/labdash/docs
+cd /home/labmd/docs
 
 # Create new doc
 vim my-protocol.md
@@ -50,36 +56,36 @@ mkdir protocols
 mkdir notes
 ```
 
-LabDash supports nested folders up to the configured depth (default: 4 levels).
+LabMD supports nested folders up to the configured depth (default: 4 levels).
 
 ## File Sharing (Shared Installation Only)
 
-If you installed LabDash with the shared directory option (`/home/labdash/docs`), all users can read and write files:
+If you installed LabMD with the shared directory option (`/home/labmd/docs`), all users can read and write files:
 
 ### How It Works
-- **Directory**: `/home/labdash/docs` (and entire `/home/labdash/`)
+- **Directory**: `/home/labmd/docs` (and entire `/home/labmd/`)
 - **Permissions**: `1777` (sticky bit enabled)
-- **Owner**: `labdash:labdash`
+- **Owner**: `labmd:labmd`
 - **Access**: All users can read/write, but only file owners can delete their files
 
 ### File Permissions Best Practices
 
 **Files are automatically shareable:**
 ```bash
-# Create a file in /home/labdash/docs
-touch /home/labdash/docs/new-doc.md
-# Everyone can read and write it
+# Create a file in /home/labmd/docs
+touch /home/labmd/docs/new-doc.md
+# Everyone can read it
 ```
 
 **To make a file read-only:**
 ```bash
-chmod 644 /home/labdash/docs/readonly-doc.md
+chmod 644 /home/labmd/docs/readonly-doc.md
 # Owner can write, others can only read
 ```
 
 **Share files from your home directory:**
 ```bash
-cp ~/my-research.md /home/labdash/docs/
+cp ~/my-research.md /home/labmd/docs/
 # File becomes accessible to everyone
 ```
 
@@ -88,9 +94,9 @@ cp ~/my-research.md /home/labdash/docs/
 - Others can read/write but cannot delete
 
 ### Collaboration Workflow
-1. **Upload**: Copy files to `/home/labdash/docs` - automatically accessible to all
+1. **Upload**: Copy files to `/home/labmd/docs` - automatically accessible to all
 2. **Edit**: Use any editor (vim, nano, VSCode) directly
-3. **Download**: Copy to your home directory - `cp /home/labdash/docs/file.md ~/`
+3. **Download**: Copy to your home directory - `cp /home/labmd/docs/file.md ~/`
 
 ## Markdown Features
 
@@ -115,67 +121,68 @@ $$
 
 ```python
 def hello_world():
-    print("Hello, LabDash!")
+    print("Hello, LabMD!")
 ```
 
 ## Configuration
 
-Edit `/etc/labdash/config.json` to customize settings:
-
+Edit `/etc/labmd/config.json` to customize settings. The file only contains your customized values - all other settings use backend defaults. A configuration example:
 ```json
 {
   "projectName": "My Lab",
-  "labName": "Research Laboratory",
+  "labName": "Research Laboratory", 
   "port": 8088,
-  "docsPath": "/home/labdash/docs",
-  "docsDepth": 4,
-  "defaultDoc": "index.md",
-  "monitor": {
-    "intervalCRGSec": 2,
-    "intervalDiskHours": 1,
-    "idleTimeoutSec": 60,
-    "idleIntervalCRGSec": 300,
-    "idleIntervalDiskHours": 6,
-    "historyCPU": 20,
-    "historyGPU": 20,
-    "historyRAM": 20
-  },
-  "disk": {
-    "includedPartitions": {
-      "/": "System",
-      "/home": "User Home"
-    },
-    "ignoredPartitions": ["/boot", "/boot/efi"],
-    "ignoredUsers": ["root", "syslog"],
-    "maxUsersToList": 12
+  "docsPath": "/home/labmd/docs",
+  "admin": {
+    "name": "John Doe",
+    "email": "john@lab.com"
   }
 }
 ```
 
+### Available Settings
+Only add settings you want to customize:
+- `projectName`: Display name in header (default: "LabMD")
+- `labName`: Subtitle in header (default: "Lab Monitoring & Documentation")
+- `port`: Web server port (default: 8088)
+- `docsPath`: Documentation directory path
+- `admin.name/email`: Administrator contact info (optional)
+- `defaultDoc`: Homepage file (default: "index.md")
+- `docsDepth`: Max folder nesting (default: 4)
+
 **After editing, restart the service:**
 ```bash
-sudo systemctl restart labdash
+sudo systemctl restart labmd
 ```
+
+**Check what's new:** See [CHANGELOG.md](https://github.com/SheepTAO/labmd/blob/main/CHANGELOG.md) for configuration changes when upgrading.
 
 ## System Commands
 
 ```bash
 # Service management
-sudo systemctl start labdash
-sudo systemctl stop labdash
-sudo systemctl restart labdash
-sudo systemctl status labdash
+sudo systemctl start labmd      # Start service
+sudo systemctl stop labmd       # Stop service
+sudo systemctl restart labmd    # Restart after config changes
+sudo systemctl status labmd     # Check status
 
 # View logs
-sudo journalctl -u labdash -f
+sudo journalctl -u labmd -f     # Follow live logs
+sudo journalctl -u labmd -n 50  # Last 50 lines
+
+# Upgrade LabMD
+# 1. Download new version
+# 2. Extract and enter directory
+# 3. Run: sudo ./install.sh
+# Note: Config and docs are preserved automatically
 ```
 
 ## Troubleshooting
 
-### Can't write to `/home/labdash/docs`?
+### Can't write to `/home/labmd/docs`?
 ```bash
 # Check directory permissions
-ls -ld /home/labdash/docs
+ls -ld /home/labmd/docs
 # Should show: drwxrwxrwt (1777)
 
 # If wrong, contact your system administrator
@@ -183,20 +190,42 @@ ls -ld /home/labdash/docs
 
 ### Service won't start?
 ```bash
-# Check logs
-sudo journalctl -u labdash -n 50
+# Check logs for errors
+sudo journalctl -u labmd -n 50
 
-# Verify config
-sudo cat /etc/labdash/config.json
+# Verify config file is valid JSON
+sudo cat /etc/labmd/config.json
 
-# Check if port is available
-sudo lsof -i :8088
+# Check if port is already in use
+sudo ss -tuln | grep :8088
+# Or: sudo lsof -i :8088
 ```
 
 ### Files not showing up?
 - Ensure files have `.md` extension
-- Check file permissions (must be readable by labdash service)
-- Verify docsPath in config is correct
-- Check docsDepth if files are deeply nested
+- Check file permissions (must be readable by labmd service)
+- Verify `docsPath` in config points to the correct directory
+- Check `docsDepth` setting if files are in deeply nested folders
+
+### GPU monitoring not working?
+- NVIDIA GPUs only (requires NVML library)
+- Check if `nvidia-smi` command works
+- Verify NVIDIA drivers are installed correctly
+
+### Monitoring stuck in idle mode?
+- Access the Monitor page in your browser
+- System will automatically switch to active mode within 2 seconds
+- If still stuck, check browser console for errors
+
+## Uninstall
+
+```bash
+sudo /usr/share/labmd/uninstall.sh
+```
+
+The uninstall script will:
+- Automatically remove configuration files
+- Ask if you want to delete documentation (shows file count and size)
+- Clean up all system files and service
 
 **Happy documenting! 🥳**

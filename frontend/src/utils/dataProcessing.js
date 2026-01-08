@@ -1,6 +1,6 @@
 // Process App Config from backend
 export const processConfig = (data) => ({
-    projectName: data?.projectName || "LabDash",
+    projectName: data?.projectName || "LabMD",
     labName: data?.labName || "Lab Dashboard",
     version: data?.version || "version",
     intervalCRG: data?.monitor?.intervalCRGSec || 2,

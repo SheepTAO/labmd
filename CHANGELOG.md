@@ -1,106 +1,35 @@
 # Changelog
 
-All notable changes to LabDash will be documented in this file.
+All notable changes to LabMD will be documented in this file.
 
-## [1.0.0] - 2026-01-01
+## [0.1.0] - 2026-01-08
 
-### 🎉 Initial Release
+### Initial Release
 
-First stable release of LabDash - Lab Monitoring & Documentation System.
+First release of LabMD - Lab Monitoring & Documentation system.
 
-### ✨ Features
+### Features
 
-#### Monitoring System
-- **Real-time CPU monitoring**: Load percentage, model info, cores/threads count
-- **GPU monitoring**: NVIDIA GPU support via nvidia-smi
-  - Utilization, memory usage, temperature, power, fan speed
-  - Multi-GPU support with per-device and aggregated stats
-- **RAM monitoring**: Usage, total capacity, memory type detection
-- **Disk monitoring**: Partition usage, user home directory sizes
-- **Historical charts**: Configurable history length for CPU, GPU, RAM
-- **System info**: Hostname, OS, kernel, uptime, load average
+**Monitoring**
+- Real-time CPU, GPU (NVIDIA), RAM, and disk usage
+- Historical charts with configurable length
+- Adaptive idle mode to save resources
+- Multi-GPU support
 
-#### Idle Mode (Power Saving)
-- **Adaptive monitoring intervals**: Automatically reduces frequency when inactive
-- **Configurable thresholds**:
-  - `idleTimeoutSec`: Time before entering idle (0 = never idle)
-  - `idleIntervalCRGSec`: CRG interval when idle (10-600s)
-  - `idleIntervalDiskHours`: Disk scan interval when idle (0.5-48h)
-- **State transition logging**: Monitor mode changes in logs
-- **Auto-resume**: Automatically returns to active on next connection
+**Documentation**
+- Markdown rendering with math (KaTeX) and syntax highlighting
+- File tree navigation with folder support
+- Shared or personal directory modes
 
-#### Documentation System
-- **Markdown rendering**: Full GFM support with tables, lists, links
-- **Math equations**: KaTeX support for inline and block equations
-- **Code highlighting**: Syntax highlighting for 100+ languages
-- **File tree navigation**: Hierarchical folder structure
-- **File metadata**: Owner and modification time display
-- **Configurable depth**: Control max folder nesting level
-- **Default document**: Set homepage document
+**UI & Configuration**
+- Modern glassmorphism design with dark/light themes
+- Single binary with systemd service
+- Interactive installer with upgrade support
+- Fully configurable via JSON
 
-#### Modern UI
-- **Glassmorphism design**: Beautiful translucent cards with blur effects
-- **Smooth animations**: Framer Motion powered transitions
-- **Responsive layout**: Works on desktop and tablet
-- **Dark/light mode ready**: Clean color scheme
-- **Dynamic gradients**: Animated floating orbs
-
-### 🔧 Configuration
-
-Fully configurable via `/etc/labdash/config.json`:
-- Server port, project name, lab name
-- Documentation directory and depth
-- Monitoring intervals (active and idle modes)
-- History chart sizes
-- Disk partition and user filters
-
-### 📦 Installation
-
-- **Single binary**: No external dependencies
-- **Systemd service**: Automatic startup and management
-- **Interactive installer**: Guided setup process
-- **Uninstall script**: Clean removal with safety checks
-
-### 🛠️ Technical Stack
-
-**Backend:**
-- Go 1.25+
-- Standard library only (no external dependencies)
-- RESTful JSON API
-- Systemd service integration
-
-**Frontend:**
-- React 19.2
-- Vite build system
-- Tailwind CSS + Framer Motion
-- React Markdown + KaTeX + Prism
-
-### 📝 Documentation
-
-- Comprehensive README with installation guide
-- Example configuration files
-- Templates for documentation
-- Inline code comments
-
-### 🐛 Known Limitations
-
-- GPU monitoring requires NVIDIA GPUs with nvidia-smi
-- Service must run as root to access all system metrics
-- Disk scanning can be slow on large file systems
-- Documentation limited to Markdown files only
-
-### 🔒 Security
-
-- Service runs as root (required for system monitoring)
-- Path traversal protection for documentation files
-- Markdown-only file serving restriction
-- PrivateTmp enabled in systemd service
-
-### 📊 Performance
-
-- Lightweight: ~10-20MB RAM usage when idle
-- Efficient: 200ms CPU load sampling for accuracy
-- Scalable: Handles thousands of documentation files
-- Adaptive: Reduces resource usage when inactive
+### Technical Stack
+- Backend: Go 1.25+ (standard library only)
+- Frontend: React 18 + Vite + Tailwind CSS
+- Dependencies: NVIDIA drivers (optional, for GPU monitoring)
 
 ---

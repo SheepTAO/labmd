@@ -1,4 +1,4 @@
-# LabDash FAQ
+# LabMD FAQ
 
 ## GPU Monitoring
 
@@ -44,7 +44,7 @@ Automatically reduces monitoring frequency to save resources.
 
 ## Remote Access
 
-### How to access LabDash remotely?
+### How to access LabMD remotely?
 
 **Recommended: SSH Tunnel** (no firewall configuration needed)
 
@@ -64,10 +64,10 @@ http://localhost:8088
 
 ```bash
 # Check service status
-sudo systemctl status labdash
+sudo systemctl status labmd
 
 # View logs
-sudo journalctl -u labdash -f
+sudo journalctl -u labmd -f
 
 # Common causes:
 # 1. Port already in use
@@ -91,6 +91,6 @@ nvidia-smi --query-gpu=driver_version --format=csv
 
 ## Help
 
-- **View logs**: `sudo journalctl -u labdash -f`
-- **Config file**: `/etc/labdash/config.json`
+- **View logs**: `sudo journalctl -u labmd -f`
+- **Config file**: `/etc/labmd/config.json`
 - **Documentation**: [README.md](README.md)

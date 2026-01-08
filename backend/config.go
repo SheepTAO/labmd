@@ -13,7 +13,7 @@ type Config struct {
 	DocsPath    string `json:"docsPath"`   // User configurable source doc
 	DocsDepth   int    `json:"docsDepth"`  // Max depth for docs tree
 	DefaultDoc  string `json:"defaultDoc"` // Default document to load as homepage
-	Version     string `json:"version"`    // Labdash version
+	Version     string `json:"version"`    // LabMD version
 	Admin       struct {
 		Name  string `json:"name"`
 		Email string `json:"email"`
@@ -39,12 +39,12 @@ var globalConfig Config
 
 func LoadConfig(configPath string) {
 	// 1. Set Default Values
-	globalConfig.ProjectName = "LabDash"
-	globalConfig.LabName = "Lab Dashboard"
-	globalConfig.Port = 8088                     // Default port 8088
-	globalConfig.DocsPath = "/home/labdash/docs" // Default docs folder
-	globalConfig.DocsDepth = 4                   // Default depth 4
-	globalConfig.DefaultDoc = "index.md"         // Default homepage
+	globalConfig.ProjectName = "LabMD"
+	globalConfig.LabName = "Lab Monitoring & Documentation"
+	globalConfig.Port = 8088                   // Default port 8088
+	globalConfig.DocsPath = "/home/labmd/docs" // Default docs folder
+	globalConfig.DocsDepth = 4                 // Default depth 4
+	globalConfig.DefaultDoc = "index.md"       // Default homepage
 	globalConfig.Admin.Name = ""
 	globalConfig.Admin.Email = ""
 	globalConfig.Version = Version

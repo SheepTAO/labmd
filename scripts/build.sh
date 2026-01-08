@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# LabDash Build Script
+# LabMD Build Script
 # Builds binaries for multiple platforms and prepares release package
 
 set -e
 
-VERSION=${1:-"1.0.0"}
+VERSION=${1:-"0.1.0"}
 BUILD_DIR="build"
 RELEASE_DIR="build/release"
 
@@ -55,7 +55,7 @@ build_backend() {
     
     for platform in "${platforms[@]}"; do
         IFS='/' read -r os arch <<< "$platform"
-        output="../$BUILD_DIR/labdash-$os-$arch"
+        output="../$BUILD_DIR/labmd-$os-$arch"
         
         if [ "$os" = "windows" ]; then
             output+=".exe"
@@ -84,23 +84,23 @@ prepare_releases() {
     for platform in "${platforms[@]}"; do
         log "Creating package for $platform..."
         
-        pkg_dir="$BUILD_DIR/labdash-$platform-$VERSION"
+        pkg_dir="$BUILD_DIR/labmd-$platform-$VERSION"
         mkdir -p "$pkg_dir"
         
-        # Copy binary (rename to labdash for easier installation)
-        if [ -f "$BUILD_DIR/labdash-$platform" ]; then
-            cp "$BUILD_DIR/labdash-$platform" "$pkg_dir/labdash"
-            chmod +x "$pkg_dir/labdash"
+        # Copy binary (rename to labmd for easier installation)
+        if [ -f "$BUILD_DIR/labmd-$platform" ]; then
+            cp "$BUILD_DIR/labmd-$platform" "$pkg_dir/labmd"
+            chmod +x "$pkg_dir/labmd"
         fi
         
         # Copy frontend dist
         cp -r "$BUILD_DIR/dist" "$pkg_dir/"
         
         # Copy default documentation
-        cp templates/index.md "$pkg_dir/" 2>/dev/null || echo "# Welcome to LabDash" > "$pkg_dir/index.md"
+        cp templates/index.md "$pkg_dir/" 2>/dev/null || echo "# Welcome to LabMD" > "$pkg_dir/index.md"
         
         # Copy systemd service file
-        cp templates/labdash.service "$pkg_dir/"
+        cp templates/labmd.service "$pkg_dir/"
         
         # Copy install script
         cp scripts/install.sh "$pkg_dir/"
@@ -111,12 +111,12 @@ prepare_releases() {
         chmod +x "$pkg_dir/uninstall.sh"
         
         # Create versioned tarball (for archive)
-        tar -czf "$RELEASE_DIR/labdash-$platform-$VERSION.tar.gz" -C "$BUILD_DIR" "labdash-$platform-$VERSION"
-        log "Package created: labdash-$platform-$VERSION.tar.gz"
+        tar -czf "$RELEASE_DIR/labmd-$platform-$VERSION.tar.gz" -C "$BUILD_DIR" "labmd-$platform-$VERSION"
+        log "Package created: labmd-$platform-$VERSION.tar.gz"
         
         # Create latest tarball (fixed name, for easy download)
-        tar -czf "$RELEASE_DIR/labdash-$platform.tar.gz" -C "$BUILD_DIR" "labdash-$platform-$VERSION"
-        log "Package created: labdash-$platform.tar.gz (latest)"
+        tar -czf "$RELEASE_DIR/labmd-$platform.tar.gz" -C "$BUILD_DIR" "labmd-$platform-$VERSION"
+        log "Package created: labmd-$platform.tar.gz (latest)"
     done
 }
 
@@ -132,7 +132,7 @@ generate_checksums() {
 # Main build process
 main() {
     echo "========================================="
-    echo "       LabDash Build Script v1.0         "
+    echo "       LabMD Build Script v0.1           "
     echo "       Building version: $VERSION        "
     echo "========================================="
     echo ""
