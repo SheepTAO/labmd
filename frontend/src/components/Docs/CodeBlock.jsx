@@ -56,14 +56,16 @@ const CodeBlock = ({ node, inline, className, children, ...props }) => {
               background: 'transparent',
               fontSize: '1.125rem',
               lineHeight: '1.4',
-              textShadow: 'none', // Remove text shadow
+              textShadow: 'none',
             }}
             codeTagProps={{
               style: { 
                 fontFamily: "'JetBrains Mono', 'Fira Code', Consolas, monospace",
                 background: 'transparent',
                 backgroundColor: 'transparent',
-                textShadow: 'none' // Remove text shadow
+                textShadow: 'none',
+                whiteSpace: 'pre',
+                display: 'block',
               }
             }}
           >
