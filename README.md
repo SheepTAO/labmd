@@ -13,6 +13,8 @@ A modern monitoring and documentation system for research laboratories.
 
 [Installation](#installation) • [Configuration](#configuration) • [Documentation](#documentation) • [Uninstall](#uninstall)
 
+![LabMD Screenshot](images/labmd-light_dark.png)
+
 </div>
 
 ---
