@@ -9,6 +9,13 @@ const DualMetricCard = ({
     footerTitle, footerSubTitle,
     bottomCards = []
 }) => {
+    // Value Color: Change color based on value
+    const getValueColor = (val) => {
+       if (val < 60) return 'text-slate-800 dark:text-slate-200'; 
+       if (val < 85) return 'text-amber-600 dark:text-amber-400'; 
+       return 'text-rose-600 dark:text-rose-400'; 
+    };
+
     return (
       <div className="col-span-1 lg:col-span-2 bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col md:flex-row gap-6 relative overflow-hidden group h-auto md:h-48">
         
@@ -24,7 +31,7 @@ const DualMetricCard = ({
               <div className="text-right">
                   <div className="flex items-baseline justify-end gap-1">
                      <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mr-1">Load</span>
-                     <span className="text-4xl font-black tracking-tighter leading-none text-slate-800 dark:text-slate-200">{value}</span>
+                     <span className={`text-4xl font-black tracking-tighter leading-none ${getValueColor(value)}`}>{value}</span>
                      <span className="text-sm font-bold text-slate-400 dark:text-slate-500 ml-1">%</span>
                   </div>
               </div>

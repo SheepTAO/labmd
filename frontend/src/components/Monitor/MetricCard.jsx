@@ -12,9 +12,9 @@ const MetricCard = ({ title, value, unit, icon, accent, footerTitle, footerSubTi
   
   // Value Color: Change color based on value
   const getValueColor = (val) => {
-     if (val < 60) return 'text-slate-800'; 
-     if (val < 85) return 'text-amber-600'; 
-     return 'text-rose-600'; 
+     if (val < 60) return 'text-slate-800 dark:text-slate-200'; 
+     if (val < 85) return 'text-amber-600 dark:text-amber-400'; 
+     return 'text-rose-600 dark:text-rose-400'; 
   };
 
   // Progress Bar Color: Green -> Orange -> Red
