@@ -123,7 +123,7 @@ const MonitorView = memo(({ stats }) => {
                value={stats.gpu.avgUtil} 
                chartData={stats.history.gpuLoad}
                rightTitle="VRAM Usage"
-               rightValue={stats.gpu.avgMemUtil}
+               rightValue={stats.gpu.memTotal > 0 ? Math.round(stats.gpu.memUsed/stats.gpu.memTotal*100) : 0}
                rightInfo={`${stats.gpu.memUsed}M / ${stats.gpu.memTotal}M`}
                footerTitle={stats.gpu.cuda}
                footerSubTitle={stats.gpu.name}
