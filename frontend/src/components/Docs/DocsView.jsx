@@ -1,18 +1,20 @@
-import { useState, useEffect, memo, useRef, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect, memo, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeSlug from 'rehype-slug';
 import rehypeKatex from 'rehype-katex';
-import { RefreshCw, BookOpen, User, Clock, ListTree } from 'lucide-react';
+import { RefreshCw, BookOpen, User, Clock, ListTree, ListCollapse, X } from 'lucide-react';
 import 'katex/dist/katex.min.css';
 import CodeBlock from './CodeBlock';
 
 // --- Independent Table of Contents Component ---
 // Separated to prevent re-rendering the heavy Markdown content when creating active highlight
-const TableOfContents = memo(({ headings }) => {
+const TableOfContents = memo(({ headings, isMobile = false, onClose }) => {
   const [activeId, setActiveId] = useState(null);
+  const [isExpanded, setIsExpanded] = useState(true);
+  const tocContainerRef = useRef(null);
 
   useEffect(() => {
     if (headings.length === 0) return;
@@ -22,11 +24,14 @@ const TableOfContents = memo(({ headings }) => {
 
     const observer = new IntersectionObserver(
       (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting && entry.target.id) {
-            setActiveId(entry.target.id);
-          }
-        });
+        // Filter intersecting entries and find the topmost one
+        const intersecting = entries.filter(e => e.isIntersecting && e.target.id);
+        if (intersecting.length > 0) {
+          // Sort by position - pick the one closest to the top
+          intersecting.sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+          const topEntry = intersecting[0];
+          setActiveId(topEntry.target.id);
+        }
       },
       {
         root: null,
@@ -45,38 +50,125 @@ const TableOfContents = memo(({ headings }) => {
     return () => observer.disconnect();
   }, [headings]);
 
+  // Auto-scroll TOC to keep active item visible
+  useEffect(() => {
+    if (!activeId || !tocContainerRef.current) return;
+    
+    const activeButton = tocContainerRef.current.querySelector(`[data-heading-id="${activeId}"]`);
+    if (!activeButton) return;
+    
+    // Get the sticky header height to account for offset
+    const stickyHeader = tocContainerRef.current.querySelector('button');
+    const headerHeight = stickyHeader ? stickyHeader.offsetHeight : 0;
+    
+    // Calculate if the active button is hidden behind the sticky header
+    const containerRect = tocContainerRef.current.getBoundingClientRect();
+    const buttonRect = activeButton.getBoundingClientRect();
+    
+    // If button is behind the sticky header, scroll it into view with offset
+    if (buttonRect.top < containerRect.top + headerHeight) {
+      tocContainerRef.current.scrollBy({
+        top: buttonRect.top - containerRect.top - headerHeight - 10,
+        behavior: 'smooth'
+      });
+    } else if (buttonRect.bottom > containerRect.bottom) {
+      // If button is below visible area, scroll it up
+      activeButton.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'nearest'
+      });
+    }
+  }, [activeId]);
+
   const scrollToHeading = (id) => {
     const element = document.getElementById(id);
     if (element) {
       setActiveId(id);
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Close mobile drawer after selecting
+      if (isMobile && onClose) {
+        onClose();
+      }
     }
   };
 
   if (headings.length === 0) return null;
 
-  return (
-    <div className="hidden 2xl:block w-64 flex-shrink-0 h-screen sticky top-0 py-12 pr-2 overflow-y-auto custom-scrollbar">
-      {/* Track Line Container */}
-      <div className="relative pl-6 border-l border-slate-200 dark:border-slate-800">
-        <h4 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-6 flex items-center gap-2">
-          <ListTree size={12} />
-          Contents
-        </h4>
-        <ul className="space-y-0.5 relative">
-          {headings.map((h, i) => {
-            const isActive = activeId === h.id;
-            
-            // Dynamic Typography based on level
-            let textClass = "text-slate-500 dark:text-slate-500 font-normal";
-            if (h.level === 1) textClass = "font-bold text-slate-800 dark:text-slate-100 mb-1 mt-3 first:mt-0";
-            else if (h.level === 2) textClass = "font-medium text-slate-700 dark:text-slate-300 mt-1";
-            else textClass = "text-slate-500 dark:text-slate-400";
+  // Find the minimum heading level (top level in this document)
+  const topLevel = Math.min(...headings.map(h => h.level));
 
-            if (isActive) {
-               // Active Override
-               textClass = "text-indigo-600 dark:text-indigo-400 font-semibold";
-               if (h.level === 1) textClass += " font-bold"; 
+  // Find the top-level parent heading for the current active heading
+  const getTopLevelParent = (activeHeadingId) => {
+    const activeIndex = headings.findIndex(h => h.id === activeHeadingId);
+    if (activeIndex === -1) return null;
+    
+    // If already top level, return itself
+    if (headings[activeIndex].level === topLevel) {
+      return headings[activeIndex].id;
+    }
+    
+    // Search backwards for the first top-level heading
+    for (let i = activeIndex - 1; i >= 0; i--) {
+      if (headings[i].level === topLevel) {
+        return headings[i].id;
+      }
+    }
+    return null;
+  };
+
+  const containerClasses = isMobile
+    ? "w-80 bg-white dark:bg-slate-800 h-full overflow-y-auto custom-scrollbar"
+    : "hidden 2xl:block w-64 flex-shrink-0 h-screen sticky top-0 pr-2 overflow-y-auto custom-scrollbar";
+
+  return (
+    <div ref={tocContainerRef} className={containerClasses}>
+      {/* Scrollable Content with Sticky Header */}
+      <div className={`relative ${isMobile ? 'px-6' : 'pl-6 border-l border-slate-200 dark:border-slate-800'}`}>
+        {/* Sticky Header - visually integrated */}
+        <div className="sticky top-0 z-10 py-4 flex items-center justify-between bg-transparent">
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="flex items-center gap-2 hover:opacity-70 transition-opacity"
+          >
+            {isExpanded ? (
+              <ListCollapse size={16} className="text-slate-600 dark:text-slate-400" />
+            ) : (
+              <ListTree size={16} className="text-slate-600 dark:text-slate-400" />
+            )}
+            <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">
+              Table of Contents
+            </h4>
+          </button>
+          {isMobile && (
+            <button
+              onClick={onClose}
+              className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors"
+            >
+              <X size={18} className="text-slate-500 dark:text-slate-400" />
+            </button>
+          )}
+        </div>
+
+        <ul className="space-y-0.5 relative py-6">
+          {headings
+            .filter(h => isExpanded || h.level === topLevel) // Show all when expanded, only top level when collapsed
+            .map((h, i) => {
+            // When collapsed, highlight the top-level parent of the active heading
+            const isActive = isExpanded 
+              ? activeId === h.id 
+              : h.id === getTopLevelParent(activeId);
+            
+            // Fixed font-weight to prevent layout shift
+            let textClass = "font-medium";
+            let colorClass = "text-slate-600 dark:text-slate-300";
+            
+            if (h.level === 1) {
+              textClass = "font-semibold";
+              colorClass = isActive ? "text-indigo-600 dark:text-indigo-400" : "text-slate-900 dark:text-slate-100";
+            } else if (h.level === 2) {
+              colorClass = isActive ? "text-indigo-600 dark:text-indigo-400" : "text-slate-700 dark:text-slate-200";
+            } else {
+              colorClass = isActive ? "text-indigo-600 dark:text-indigo-400" : "text-slate-600 dark:text-slate-300";
             }
 
             return (
@@ -92,9 +184,10 @@ const TableOfContents = memo(({ headings }) => {
                 
                 <button 
                   onClick={() => scrollToHeading(h.id)}
+                  data-heading-id={h.id}
                   className={`text-left w-full transition-colors duration-200 py-1 text-xs leading-relaxed block
                     hover:text-indigo-500 dark:hover:text-indigo-300
-                    ${textClass}
+                    ${textClass} ${colorClass}
                   `}
                   style={{ 
                     // Subtle indentation
@@ -115,6 +208,7 @@ const TableOfContents = memo(({ headings }) => {
 // --- Docs View ---
 const DocsView = memo(({ selectedFile, content, loading }) => {
   const [headings, setHeadings] = useState([]);
+  const [mobileTocOpen, setMobileTocOpen] = useState(false);
   const contentRef = useRef(null);
 
   useEffect(() => {
@@ -160,9 +254,8 @@ const DocsView = memo(({ selectedFile, content, loading }) => {
           ) : selectedFile ? (
             <div className="max-w-5xl mx-auto">
               {/* Metadata Header */}
-              <div className="mb-10 pb-8 border-b border-slate-200 dark:border-slate-700">
-                  <h1 className="text-4xl font-extrabold text-slate-900 dark:text-slate-100 mb-6 tracking-tight">{selectedFile.name.replace(/\.md$/i, '')}</h1>
-                  <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-500 dark:text-slate-400">
+              <div className="mb-8 pb-6 border-b border-slate-200 dark:border-slate-700">
+                  <div className="flex flex-wrap items-center gap-3 text-xs font-medium text-slate-500 dark:text-slate-400">
                     <div className="flex items-center gap-2 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 shadow-sm">
                         <User size={14} className="text-indigo-500 dark:text-indigo-400"/>
                         <span>Created by <span className="text-slate-700 dark:text-slate-300 font-bold">{selectedFile.owner || 'Unknown'}</span></span>
@@ -175,12 +268,30 @@ const DocsView = memo(({ selectedFile, content, loading }) => {
               </div>
 
               <article ref={contentRef} className="prose prose-slate prose-lg max-w-none 
-                prose-headings:font-sans prose-headings:text-slate-900 dark:prose-headings:text-slate-100 prose-headings:scroll-mt-20
-                prose-h1:text-4xl prose-h1:font-black prose-h1:mt-12 prose-h1:mb-6 prose-h1:tracking-tight prose-h1:leading-tight
-                prose-h2:text-2xl prose-h2:font-bold prose-h2:mt-12 prose-h2:mb-6 prose-h2:tracking-tight prose-h2:leading-snug
-                prose-h3:text-xl prose-h3:font-semibold prose-h3:mt-8 prose-h3:mb-4 prose-h3:leading-snug
+                prose-headings:font-sans prose-headings:scroll-mt-20
+                
+                /* H1: Bold + Left Accent + Comfortable Size */
+                prose-h1:text-3xl prose-h1:font-bold prose-h1:tracking-tight
+                prose-h1:text-slate-900 dark:prose-h1:text-slate-50
+                prose-h1:border-l-[5px] prose-h1:border-indigo-500 prose-h1:pl-4
+                prose-h1:mt-10 prose-h1:mb-6 prose-h1:leading-tight
+
+                /* H2: Semibold + Subtle Left Border + Medium Size */
+                prose-h2:text-2xl prose-h2:font-semibold prose-h2:tracking-tight
+                prose-h2:text-slate-900 dark:prose-h2:text-slate-100
+                prose-h2:border-l-[3px] prose-h2:border-slate-300 dark:prose-h2:border-slate-600 prose-h2:pl-3
+                prose-h2:mt-8 prose-h2:mb-4 prose-h2:leading-snug
+
+                /* H3: Semibold + Standard Size */
+                prose-h3:text-lg prose-h3:font-semibold prose-h3:tracking-tight
+                prose-h3:text-slate-800 dark:prose-h3:text-slate-200
+                prose-h3:mt-6 prose-h3:mb-3 prose-h3:leading-snug
+
+                /* Body Text */
                 prose-p:text-slate-600 dark:prose-p:text-slate-300 prose-p:leading-relaxed prose-p:mb-4 prose-p:break-words
-                prose-strong:font-semibold prose-strong:text-slate-800 dark:prose-strong:text-slate-200
+                
+                /* Strong: Medium weight (clearly different from headings) */
+                prose-strong:font-medium prose-strong:text-slate-700 dark:prose-strong:text-slate-300
                 prose-a:text-indigo-600 dark:prose-a:text-indigo-400 hover:prose-a:text-indigo-500 dark:hover:prose-a:text-indigo-300 prose-a:no-underline hover:prose-a:underline prose-a:break-all
                 prose-pre:my-0 prose-pre:p-0 prose-pre:bg-transparent prose-pre:shadow-none prose-pre:border-none prose-pre:overflow-visible
                 prose-code:before:content-none prose-code:after:content-none prose-code:text-slate-800 dark:prose-code:text-slate-200 prose-code:bg-slate-100 dark:prose-code:bg-slate-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded
@@ -217,11 +328,50 @@ const DocsView = memo(({ selectedFile, content, loading }) => {
           )}
         </div>
 
-        {/* Right TOC Sidebar (Now Independent) */}
-        {!loading && selectedFile && (
+        {/* Desktop TOC Sidebar */}
+        {!loading && selectedFile && headings.length > 0 && (
           <TableOfContents headings={headings} />
         )}
       </div>
+
+      {/* Mobile TOC Button */}
+      {!loading && selectedFile && headings.length > 0 && (
+        <button
+          onClick={() => setMobileTocOpen(true)}
+          className="fixed bottom-6 right-6 2xl:hidden p-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all z-30"
+          title="Table of Contents"
+        >
+          <ListTree size={20} />
+        </button>
+      )}
+
+      {/* Mobile TOC Drawer */}
+      <AnimatePresence>
+        {mobileTocOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setMobileTocOpen(false)}
+              className="fixed inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm z-40 2xl:hidden"
+            />
+            <motion.aside
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed right-0 top-0 h-full z-50 2xl:hidden shadow-2xl"
+            >
+              <TableOfContents 
+                headings={headings} 
+                isMobile={true}
+                onClose={() => setMobileTocOpen(false)}
+              />
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 });
