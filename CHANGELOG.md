@@ -2,6 +2,27 @@
 
 All notable changes to LabMD will be documented in this file.
 
+## [v0.1.1] - 2026-01-16
+
+### Improvements
+
+**Documentation Panel**
+- Enhanced table of contents with collapsible functionality
+- Improved heading hierarchy with visual borders for better readability
+- Added mobile-friendly TOC drawer with floating button
+- Fixed TOC auto-scroll and highlighting behavior
+- Optimized sticky header with transparent background
+
+**Monitoring Panel**
+- Fixed GPU memory utilization display accuracy
+- Optimized Resource Overview card layout to reduce crowding
+- Improved tooltip display styles
+
+**UI/UX**
+- Enhanced dark mode color consistency across components
+- Fixed code block indentation rendering
+- Optimized theme switching transitions
+
 ## [v0.1.0] - 2026-01-08
 
 ### Initial Release

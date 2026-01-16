@@ -1,0 +1,57 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Get version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+      
+      - name: Build project
+        run: |
+          chmod +x scripts/build.sh
+          ./scripts/build.sh ${{ steps.get_version.outputs.VERSION }}
+      
+      - name: Extract changelog for this version
+        id: changelog
+        run: |
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+          # Extract only the current version's changelog content
+          # From current version heading to the next version heading (exclusive)
+          awk "/## \[v$VERSION\]/{flag=1; next} /## \[v/{flag=0} flag" CHANGELOG.md > /tmp/changelog.txt
+          # If empty, provide default message
+          if [ ! -s /tmp/changelog.txt ]; then
+            echo "Release version $VERSION" > /tmp/changelog.txt
+          fi
+      
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          body_path: /tmp/changelog.txt
+          files: build/release/*.tar.gz
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
