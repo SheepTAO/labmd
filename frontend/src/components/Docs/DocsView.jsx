@@ -1,4 +1,4 @@
-import { useState, useEffect, memo, useRef } from 'react';
+import { useState, useEffect, memo, useRef, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -8,6 +8,109 @@ import rehypeKatex from 'rehype-katex';
 import { RefreshCw, BookOpen, User, Clock, ListTree } from 'lucide-react';
 import 'katex/dist/katex.min.css';
 import CodeBlock from './CodeBlock';
+
+// --- Independent Table of Contents Component ---
+// Separated to prevent re-rendering the heavy Markdown content when creating active highlight
+const TableOfContents = memo(({ headings }) => {
+  const [activeId, setActiveId] = useState(null);
+
+  useEffect(() => {
+    if (headings.length === 0) return;
+    
+    // Set initial active state
+    setActiveId(headings[0]?.id);
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && entry.target.id) {
+            setActiveId(entry.target.id);
+          }
+        });
+      },
+      {
+        root: null,
+        // Adjust rootMargin to trigger earlier/smoother
+        // -80% bottom means we trigger when the header is in the top 20% of screen
+        rootMargin: '0px 0px -80% 0px', 
+        threshold: 0
+      }
+    );
+
+    headings.forEach(h => {
+      const el = document.getElementById(h.id);
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, [headings]);
+
+  const scrollToHeading = (id) => {
+    const element = document.getElementById(id);
+    if (element) {
+      setActiveId(id);
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  if (headings.length === 0) return null;
+
+  return (
+    <div className="hidden 2xl:block w-64 flex-shrink-0 h-screen sticky top-0 py-12 pr-2 overflow-y-auto custom-scrollbar">
+      {/* Track Line Container */}
+      <div className="relative pl-6 border-l border-slate-200 dark:border-slate-800">
+        <h4 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-6 flex items-center gap-2">
+          <ListTree size={12} />
+          Contents
+        </h4>
+        <ul className="space-y-0.5 relative">
+          {headings.map((h, i) => {
+            const isActive = activeId === h.id;
+            
+            // Dynamic Typography based on level
+            let textClass = "text-slate-500 dark:text-slate-500 font-normal";
+            if (h.level === 1) textClass = "font-bold text-slate-800 dark:text-slate-100 mb-1 mt-3 first:mt-0";
+            else if (h.level === 2) textClass = "font-medium text-slate-700 dark:text-slate-300 mt-1";
+            else textClass = "text-slate-500 dark:text-slate-400";
+
+            if (isActive) {
+               // Active Override
+               textClass = "text-indigo-600 dark:text-indigo-400 font-semibold";
+               if (h.level === 1) textClass += " font-bold"; 
+            }
+
+            return (
+              <li key={i} className="relative group">
+                {/* Active Indicator Pille - Animated Sliding Marker */}
+                {isActive && (
+                  <motion.div
+                    layoutId="toc-marker"
+                    className="absolute -left-[25px] top-1.5 bottom-1.5 w-[3px] rounded-full bg-indigo-600 dark:bg-indigo-400"
+                    transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                  />
+                )}
+                
+                <button 
+                  onClick={() => scrollToHeading(h.id)}
+                  className={`text-left w-full transition-colors duration-200 py-1 text-xs leading-relaxed block
+                    hover:text-indigo-500 dark:hover:text-indigo-300
+                    ${textClass}
+                  `}
+                  style={{ 
+                    // Subtle indentation
+                    paddingLeft: h.level === 1 ? '0px' : `${(h.level - 1) * 12}px` 
+                  }}
+                >
+                  {h.text}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </div>
+  );
+});
 
 // --- Docs View ---
 const DocsView = memo(({ selectedFile, content, loading }) => {
@@ -26,13 +129,6 @@ const DocsView = memo(({ selectedFile, content, loading }) => {
       setHeadings(extractedHeadings);
     }
   }, [content]);
-
-  const scrollToHeading = (id) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  };
 
   // Image URL Transformer
   const transformImageUri = (uri) => {
@@ -121,35 +217,9 @@ const DocsView = memo(({ selectedFile, content, loading }) => {
           )}
         </div>
 
-        {/* Right TOC Sidebar */}
-        {!loading && selectedFile && headings.length > 0 && (
-          <div className="hidden 2xl:block w-72 p-8 border-l border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 sticky top-0 h-screen overflow-y-auto custom-scrollbar">
-             <div className="mt-4">
-                <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-6 flex items-center gap-2">
-                  <ListTree size={14} />
-                  On this page
-                </h4>
-                <ul className="space-y-2">
-                  {headings.map((h, i) => (
-                    <li key={i}>
-                      <button 
-                        onClick={() => scrollToHeading(h.id)}
-                        className={`text-sm text-left w-full transition-all hover:text-indigo-600 dark:hover:text-indigo-400 line-clamp-2 ${
-                          h.level === 1 
-                            ? 'font-bold text-slate-800 dark:text-slate-200 text-base' 
-                            : h.level === 2 
-                            ? 'font-semibold text-slate-700 dark:text-slate-300' 
-                            : 'font-normal text-slate-500 dark:text-slate-400'
-                        }`}
-                        style={{ paddingLeft: `${(h.level - 1) * 12}px` }}
-                      >
-                        {h.text}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-             </div>
-          </div>
+        {/* Right TOC Sidebar (Now Independent) */}
+        {!loading && selectedFile && (
+          <TableOfContents headings={headings} />
         )}
       </div>
     </motion.div>
