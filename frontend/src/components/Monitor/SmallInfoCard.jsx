@@ -9,7 +9,9 @@ const SmallInfoCard = ({ label, value, icon, color }) => {
         <div className={`rounded-xl px-3 py-2 border flex items-center justify-between ${colors[color]}`}>
             <div className="flex items-center gap-2 opacity-80">
                 {icon}
-                <span className="text-[10px] font-bold uppercase tracking-wider">{label}</span>
+                <div className="flex flex-col">
+                    <span className="text-[10px] font-bold uppercase tracking-wider pt-0.5">{label}</span>
+                </div>
             </div>
             <div className="text-base font-black tracking-tight text-slate-800 dark:text-slate-200">{value}</div>
         </div>

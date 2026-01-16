@@ -17,7 +17,7 @@ const DualMetricCard = ({
     };
 
     return (
-      <div className="col-span-1 lg:col-span-2 bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col md:flex-row gap-6 relative overflow-hidden group h-auto md:h-48">
+      <div className="col-span-1 md:col-span-2 bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col md:flex-row gap-6 relative overflow-hidden group h-auto md:h-48">
         
         {/* Left: Core Load & History */}
         <div className="flex-1 flex flex-col justify-between relative z-10">
