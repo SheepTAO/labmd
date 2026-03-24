@@ -11,7 +11,7 @@ All notable changes to LabMD will be documented in this file.
 
 ### Fixes
 
-- Corrected GPU VRAM percentage display to use actual memory occupancy
+- Corrected the frontend GPU VRAM percentage display to use actual memory occupancy
 
 ## [v0.1.1] - 2026-01-16
 

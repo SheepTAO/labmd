@@ -2,6 +2,8 @@ import { Zap, Fan, Thermometer } from 'lucide-react';
 
 // --- Component: GPU Slot (Compact Optimization + New Icons) ---
 const GPUSlotDetailed = ({ data }) => {
+  const vramUsagePercent = data.memTotal > 0 ? Math.round((data.memUsed / data.memTotal) * 100) : 0;
+
   const getColor = (val) => {
     if (val < 40) return 'bg-emerald-400';
     if (val < 80) return 'bg-amber-400';
@@ -39,7 +41,7 @@ const GPUSlotDetailed = ({ data }) => {
                 <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400">{data.memUsed}M <span className="text-slate-400 dark:text-slate-500 font-normal">/ {data.memTotal}M</span></span>
             </div>
             <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-600 rounded-full overflow-hidden">
-               <div className="h-full bg-indigo-400 rounded-full transition-all duration-500" style={{width: `${data.memUtil}%`}}></div>
+               <div className="h-full bg-indigo-400 rounded-full transition-all duration-500" style={{width: `${vramUsagePercent}%`}}></div>
             </div>
          </div>
 
