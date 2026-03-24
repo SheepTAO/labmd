@@ -15,3 +15,7 @@ dev/
 # OS files
 .DS_Store
 Thumbs.db
+
+# pixi environments
+.pixi/*
+!.pixi/config.toml

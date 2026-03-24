@@ -1,0 +1,37 @@
+[workspace]
+authors = ["SheepTAO <sheeptao@outlook.com>"]
+channels = ["conda-forge"]
+name = "labmd"
+platforms = ["linux-64"]
+version = "0.1.0"
+
+[tasks.frontend-install]
+cmd = "npm install"
+cwd = "frontend"
+
+[tasks.frontend-dev]
+cmd = "npm run dev"
+cwd = "frontend"
+
+[tasks.frontend-build]
+cmd = "npm run build"
+cwd = "frontend"
+
+[tasks.frontend-lint]
+cmd = "npm run lint"
+cwd = "frontend"
+
+[tasks.backend-dev]
+cmd = "go run . dev"
+cwd = "backend"
+
+[tasks.backend-build]
+cmd = "go build ./..."
+cwd = "backend"
+
+[tasks.build-release]
+cmd = "bash -lc './scripts/build.sh \"${VERSION:-0.1.0}\"'"
+
+[dependencies]
+go = ">=1.26.1,<2"
+nodejs = ">=25.7.0,<25.8"

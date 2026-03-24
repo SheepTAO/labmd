@@ -270,9 +270,8 @@ See [index.md](templates/index.md) for detailed documentation guide.
 
 ### Prerequisites
 
-- Go 1.25+
-- Node.js 18+
-- npm
+- [Pixi](https://pixi.sh/latest/) (recommended)
+- Git
 
 ### Setup
 
@@ -281,23 +280,48 @@ See [index.md](templates/index.md) for detailed documentation guide.
 git clone https://github.com/SheepTAO/labmd.git
 cd labmd
 
-# Install frontend deps
-cd frontend
-npm install
+# Install the managed toolchain (Go + Node.js)
+pixi install
 
+# Install frontend deps
+pixi run frontend-install
+```
+
+### Local Dev Config
+
+Backend dev mode reads `dev/config.json` from the repository root.
+Create it before starting the backend:
+
+```bash
+mkdir -p dev
+cat > dev/config.json <<'EOF'
+{
+  "projectName": "LabMD Dev",
+  "labName": "Local Development",
+  "port": 8089,
+  "docsPath": "./templates"
+}
+EOF
+```
+
+`8089` is used here to match the Vite proxy in [`frontend/vite.config.js`](frontend/vite.config.js).
+
+### Run Dev Servers
+
+```bash
 # Start backend (terminal 1)
-cd backend
-go run . dev  # http://localhost:8088
+pixi run backend-dev   # http://localhost:8089
 
 # Start frontend (terminal 2)
-cd frontend
-npm run dev   # http://localhost:5173
+pixi run frontend-dev  # http://localhost:5173
 ```
+
+Pixi keeps the Go and Node.js versions consistent across machines, so you no longer need to rely on system-wide toolchains for local development.
 
 ### Build Release
 
 ```bash
-./scripts/build.sh v1.0.x
+VERSION=v1.0.x pixi run build-release
 ```
 
 Output: `build/release/labmd-linux-amd64-1.0.x.tar.gz`
