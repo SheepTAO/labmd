@@ -293,12 +293,16 @@ func getGPUStatsNVML() (GPUStats, []GPUStatsSeq) {
 
 		memTotalMB := int(mem.Total / BytesToMB)
 		memUsedMB := int(mem.Used / BytesToMB)
+		memUsagePercent := 0
+		if memTotalMB > 0 {
+			memUsagePercent = int(float64(memUsedMB) / float64(memTotalMB) * 100)
+		}
 		powerW := int(power / 1000) // Convert to watts
 
 		gpus = append(gpus, GPUStatsSeq{
 			ID:       i,
 			Util:     int(util.Gpu),
-			MemUtil:  int(util.Memory),
+			MemUtil:  memUsagePercent,
 			MemUsed:  memUsedMB,
 			MemTotal: memTotalMB,
 			Temp:     int(temp),
@@ -309,7 +313,7 @@ func getGPUStatsNVML() (GPUStats, []GPUStatsSeq) {
 
 		memTotal += memTotalMB
 		utilTotal += int(util.Gpu)
-		memUtilTotal += int(util.Memory)
+		memUtilTotal += memUsagePercent
 		memUsed += memUsedMB
 		powerTotal += powerW
 		tempTotal += int(temp)
@@ -372,8 +376,11 @@ func getGPUStatsNvidiaSMI() (GPUStats, []GPUStatsSeq) {
 		memTotalMB, _ := strconv.Atoi(parts[2])
 		temp, _ := strconv.Atoi(parts[3])
 		util, _ := strconv.Atoi(parts[4])
-		memUtil, _ := strconv.Atoi(parts[5])
 		memUsedMB, _ := strconv.Atoi(parts[6])
+		memUsagePercent := 0
+		if memTotalMB > 0 {
+			memUsagePercent = int(float64(memUsedMB) / float64(memTotalMB) * 100)
+		}
 		powerFloat, _ := strconv.ParseFloat(parts[7], 64)
 		power := int(powerFloat)
 		fan, _ := strconv.Atoi(parts[8])
@@ -381,7 +388,7 @@ func getGPUStatsNvidiaSMI() (GPUStats, []GPUStatsSeq) {
 		gpus = append(gpus, GPUStatsSeq{
 			ID:       idx,
 			Util:     util,
-			MemUtil:  memUtil,
+			MemUtil:  memUsagePercent,
 			MemUsed:  memUsedMB,
 			MemTotal: memTotalMB,
 			Temp:     temp,
@@ -392,7 +399,7 @@ func getGPUStatsNvidiaSMI() (GPUStats, []GPUStatsSeq) {
 
 		memTotal += memTotalMB
 		utilTotal += util
-		memUtilTotal += memUtil
+		memUtilTotal += memUsagePercent
 		memUsed += memUsedMB
 		powerTotal += power
 		tempTotal += temp
