@@ -5,6 +5,7 @@ const emptyResources = {
   cpu: { used: 0, available: 0, total: 0 },
   memory: { used: 0, available: 0, total: 0 },
   gpu: { used: 0, available: 0, total: 0 },
+  history: { cpu: [], memory: [], gpu: [] },
 };
 
 const formatMemory = (value) => {
@@ -40,6 +41,178 @@ const compareJobsById = (a, b) => {
     return String(a.id).localeCompare(String(b.id));
   }
   return aID - bID;
+};
+
+const formatPointTime = (timestamp) => {
+  if (!timestamp) {
+    return 'No sample yet';
+  }
+
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) {
+    return timestamp;
+  }
+
+  return date.toLocaleString();
+};
+
+const buildPolyline = (points, width, height, accessor, maxValue) => (
+  points
+    .map((point, index) => {
+      const x = points.length === 1 ? width / 2 : (index / (points.length - 1)) * width;
+      const y = height - ((accessor(point) || 0) / maxValue) * height;
+      return `${x},${y}`;
+    })
+    .join(' ')
+);
+
+const ResourceTrendCard = ({ card, theme, history, formatter = (value) => String(value) }) => {
+  const [hoveredIndex, setHoveredIndex] = useState(null);
+  const chartHeight = 118;
+  const chartWidth = 520;
+  const safeHistory = history?.length ? history : Array.from({ length: 12 }, () => ({ used: 0, available: 0, total: 0, timestamp: '' }));
+  const maxValue = Math.max(1, ...safeHistory.map((point) => point.total || 0));
+  const hoveredPoint = hoveredIndex !== null ? safeHistory[hoveredIndex] : safeHistory[safeHistory.length - 1];
+
+  const lineColors = {
+    indigo: {
+      available: '#6366f1',
+      used: '#818cf8',
+      total: '#94a3ff',
+      grid: 'rgba(99, 102, 241, 0.14)',
+    },
+    emerald: {
+      available: '#10b981',
+      used: '#34d399',
+      total: '#86efac',
+      grid: 'rgba(16, 185, 129, 0.14)',
+    },
+    amber: {
+      available: '#f59e0b',
+      used: '#fbbf24',
+      total: '#facc15',
+      grid: 'rgba(245, 158, 11, 0.14)',
+    },
+  };
+
+  const colors = lineColors[card.color];
+
+  return (
+    <div className={`rounded-2xl border p-5 ${theme.shell}`}>
+      <div className="flex items-center gap-4">
+        <div className="min-w-0 flex items-center gap-3 shrink-0">
+          <div className={`flex h-11 w-11 items-center justify-center rounded-xl border shrink-0 ${theme.badge}`}>
+            {card.icon}
+          </div>
+          <div className="text-lg font-extrabold uppercase">{card.label}</div>
+        </div>
+
+        <div className="flex-1" />
+
+        <div className="flex items-baseline gap-4 shrink-0">
+          <div className="flex items-baseline gap-2 whitespace-nowrap">
+            <span className="text-4xl font-black tracking-tight text-slate-900 dark:text-slate-100">{card.freeValue}</span>
+            <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">{card.freeLabel}</span>
+          </div>
+          <div className="flex items-baseline gap-1 whitespace-nowrap">
+            <span className="text-xl font-bold tracking-tight text-slate-500 dark:text-slate-300">{card.usedValue}</span>
+            <span className="text-[8px] font-bold uppercase text-slate-500 dark:text-slate-500">{card.usedLabel}</span>
+          </div>
+          <div className="flex items-baseline gap-1 whitespace-nowrap">
+            <span className="text-xl font-bold tracking-tight text-slate-500 dark:text-slate-300">{card.totalValue}</span>
+            <span className="text-[8px] font-bold uppercase text-slate-500 dark:text-slate-500">{card.totalLabel}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-5 relative">
+        <div className="mb-3 flex items-center gap-4 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+          <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: colors.available }} />{card.freeLabel}</span>
+          <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: colors.used }} />{card.usedLabel}</span>
+        </div>
+
+        <div className="relative h-[118px]">
+          <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="absolute inset-0 h-full w-full overflow-visible">
+            {[0.25, 0.5, 0.75].map((ratio) => (
+              <line
+                key={ratio}
+                x1="0"
+                x2={chartWidth}
+                y1={chartHeight * ratio}
+                y2={chartHeight * ratio}
+                stroke={colors.grid}
+                strokeWidth="1"
+                strokeDasharray="4 6"
+              />
+            ))}
+
+            <polyline
+              fill="none"
+              stroke={colors.total}
+              strokeWidth="2.25"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeDasharray="8 6"
+              opacity="1"
+              points={buildPolyline(safeHistory, chartWidth, chartHeight, (point) => point.total, maxValue)}
+            />
+            <polyline
+              fill="none"
+              stroke={colors.used}
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              points={buildPolyline(safeHistory, chartWidth, chartHeight, (point) => point.used, maxValue)}
+            />
+            <polyline
+              fill="none"
+              stroke={colors.available}
+              strokeWidth="3.25"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              points={buildPolyline(safeHistory, chartWidth, chartHeight, (point) => point.available, maxValue)}
+            />
+
+            {hoveredIndex !== null ? (() => {
+              const x = safeHistory.length === 1 ? chartWidth / 2 : (hoveredIndex / (safeHistory.length - 1)) * chartWidth;
+              const point = safeHistory[hoveredIndex];
+              const availableY = chartHeight - ((point.available || 0) / maxValue) * chartHeight;
+              return (
+                <g>
+                  <line x1={x} x2={x} y1="0" y2={chartHeight} stroke={colors.available} strokeOpacity="0.25" strokeWidth="1.5" />
+                  <circle cx={x} cy={availableY} r="4" fill={colors.available} />
+                </g>
+              );
+            })() : null}
+          </svg>
+
+          <div className="absolute inset-0 flex">
+            {safeHistory.map((point, index) => (
+              <button
+                key={`${point.timestamp || 'empty'}-${index}`}
+                type="button"
+                aria-label={`${card.label} history point ${index + 1}`}
+                className="flex-1 h-full bg-transparent"
+                onMouseEnter={() => setHoveredIndex(index)}
+                onMouseLeave={() => setHoveredIndex(null)}
+              />
+            ))}
+          </div>
+
+          {hoveredIndex !== null ? (
+            <div className="pointer-events-none absolute left-0 top-0 rounded-xl border border-slate-200/80 bg-white/95 px-3 py-2 text-xs text-slate-600 shadow-lg shadow-slate-200/70 backdrop-blur-sm dark:border-slate-500/80 dark:bg-slate-950 dark:text-slate-100 dark:shadow-black/60">
+              <div className="font-semibold text-slate-700 dark:text-slate-50">{formatPointTime(hoveredPoint?.timestamp)}</div>
+              <div className="mt-1 flex gap-3 whitespace-nowrap">
+                <span className="text-slate-600 dark:text-slate-100">{card.freeLabel}: {formatter(hoveredPoint?.available || 0)}</span>
+                <span className="text-slate-500 dark:text-slate-300">{card.usedLabel}: {formatter(hoveredPoint?.used || 0)}</span>
+                <span className="text-slate-500 dark:text-slate-300">{card.totalLabel}: {formatter(hoveredPoint?.total || 0)}</span>
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
 };
 
 const SlurmView = ({ config }) => {
@@ -99,6 +272,8 @@ const SlurmView = ({ config }) => {
       totalLabel: 'Total',
       icon: <Cpu size={24} />,
       color: 'indigo',
+      history: resources.history?.cpu || [],
+      formatter: (value) => String(value),
     },
     {
       label: 'MEM',
@@ -110,6 +285,8 @@ const SlurmView = ({ config }) => {
       totalLabel: 'Total',
       icon: <MemoryStick size={24} />,
       color: 'emerald',
+      history: resources.history?.memory || [],
+      formatter: (value) => formatMemory(value),
     },
     {
       label: 'GPU',
@@ -121,6 +298,8 @@ const SlurmView = ({ config }) => {
       totalLabel: 'Total',
       icon: <Gpu size={24} />,
       color: 'amber',
+      history: resources.history?.gpu || [],
+      formatter: (value) => String(value),
     },
   ];
 
@@ -162,33 +341,13 @@ const SlurmView = ({ config }) => {
     <div className="p-4 md:p-8 lg:p-12 max-w-[1600px] mx-auto space-y-8">
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {summaryCards.map((card) => (
-          <div key={card.label} className={`rounded-2xl border p-5 ${cardColors[card.color].shell}`}>
-            <div className="flex items-center gap-4">
-              <div className="min-w-0 flex items-center gap-3 shrink-0">
-                <div className={`flex h-11 w-11 items-center justify-center rounded-xl border shrink-0 ${cardColors[card.color].badge}`}>
-                  {card.icon}
-                </div>
-                <div className="text-lg font-extrabold uppercase">{card.label}</div>
-              </div>
-
-              <div className="flex-1" />
-
-              <div className="flex items-baseline gap-4 shrink-0">
-                <div className="flex items-baseline gap-2 whitespace-nowrap">
-                  <span className="text-4xl font-black tracking-tight text-slate-900 dark:text-slate-100">{card.freeValue}</span>
-                  <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">{card.freeLabel}</span>
-                </div>
-                <div className="flex items-baseline gap-1 whitespace-nowrap">
-                  <span className="text-1xl font-bold tracking-tight text-slate-500 dark:text-slate-300">{card.usedValue}</span>
-                  <span className="text-[8px] font-bold uppercase text-slate-500 dark:text-slate-500">{card.usedLabel}</span>
-                </div>
-                <div className="flex items-baseline gap-1 whitespace-nowrap">
-                  <span className="text-1xl font-bold tracking-tight text-slate-500 dark:text-slate-300">{card.totalValue}</span>
-                  <span className="text-[8px] font-bold uppercase text-slate-500 dark:text-slate-500">{card.totalLabel}</span>
-                </div>
-              </div>
-            </div>
-          </div>
+          <ResourceTrendCard
+            key={card.label}
+            card={card}
+            theme={cardColors[card.color]}
+            history={card.history}
+            formatter={card.formatter}
+          />
         ))}
       </section>
 

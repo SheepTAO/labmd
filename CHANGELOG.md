@@ -2,6 +2,18 @@
 
 All notable changes to LabMD will be documented in this file.
 
+## [v0.2.1] - 2026-03-27
+
+### Added
+
+- Added Slurm history sampling with configurable interval and retention
+- Added Slurm trend charts with hover timestamps and development preloaded mock history
+
+### Changed
+
+- Improved Slurm GPU parsing to support nodes that only expose `Gres=gpu:X`
+- Refined the Slurm dashboard styling and dark-mode chart readability
+
 ## [v0.2.0] - 2026-03-25
 
 ### Added

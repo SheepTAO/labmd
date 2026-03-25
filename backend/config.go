@@ -34,10 +34,12 @@ type Config struct {
 		MaxUsersToList     int               `json:"maxUsersToList"`
 	} `json:"disk"`
 	Slurm struct {
-		Enabled     bool `json:"enabled"`
-		Available   bool `json:"available"`
-		IntervalSec int  `json:"intervalSec"`
-		DefaultJobs int  `json:"defaultJobs"`
+		Enabled              bool `json:"enabled"`
+		Available            bool `json:"available"`
+		IntervalSec          int  `json:"intervalSec"`
+		DefaultJobs          int  `json:"defaultJobs"`
+		HistoryIntervalMin   int  `json:"historyIntervalMin"`
+		HistoryRetentionHour int  `json:"historyRetentionHour"`
 	} `json:"slurm"`
 }
 
@@ -75,6 +77,8 @@ func LoadConfig(configPath string) {
 	globalConfig.Slurm.Available = false
 	globalConfig.Slurm.IntervalSec = 5
 	globalConfig.Slurm.DefaultJobs = 10
+	globalConfig.Slurm.HistoryIntervalMin = 30
+	globalConfig.Slurm.HistoryRetentionHour = 23
 
 	// 2. Try to read config file
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
@@ -140,4 +144,6 @@ func LoadConfig(configPath string) {
 	// Slurm config
 	validateInt("SlurmIntervalSec", &globalConfig.Slurm.IntervalSec, 2, 300)
 	validateInt("SlurmDefaultJobs", &globalConfig.Slurm.DefaultJobs, 1, 100)
+	validateInt("SlurmHistoryIntervalMin", &globalConfig.Slurm.HistoryIntervalMin, 1, 30)
+	validateInt("SlurmHistoryRetentionHour", &globalConfig.Slurm.HistoryRetentionHour, 1, 24)
 }

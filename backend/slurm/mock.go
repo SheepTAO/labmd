@@ -12,6 +12,45 @@ func EnableMockMode() {
 	mockMode = true
 }
 
+func PreloadMockHistory(historyIntervalMin, historyRetentionHour int) {
+	maxPoints := 1
+	if historyIntervalMin > 0 && historyRetentionHour > 0 {
+		totalMinutes := historyRetentionHour * 60
+		maxPoints = (totalMinutes + historyIntervalMin - 1) / historyIntervalMin
+		if maxPoints < 1 {
+			maxPoints = 1
+		}
+	}
+
+	history := newEmptyHistory(maxPoints)
+	startTime := time.Now().Add(-time.Duration(maxPoints-1) * time.Duration(historyIntervalMin) * time.Minute)
+
+	for i := 0; i < maxPoints; i++ {
+		summary := mockHistoricalSummary(i)
+		timestamp := startTime.Add(time.Duration(i) * time.Duration(historyIntervalMin) * time.Minute).Format(time.RFC3339)
+		history.CPU[i] = HistoryPoint{
+			Timestamp: timestamp,
+			Used:      summary.CPU.Used,
+			Available: summary.CPU.Available,
+			Total:     summary.CPU.Total,
+		}
+		history.Memory[i] = HistoryPoint{
+			Timestamp: timestamp,
+			Used:      summary.Memory.Used,
+			Available: summary.Memory.Available,
+			Total:     summary.Memory.Total,
+		}
+		history.GPU[i] = HistoryPoint{
+			Timestamp: timestamp,
+			Used:      summary.GPU.Used,
+			Available: summary.GPU.Available,
+			Total:     summary.GPU.Total,
+		}
+	}
+
+	preloadHistory(history)
+}
+
 func mockResourceSummary() ResourceSummary {
 	rng := rand.New(rand.NewSource(time.Now().Unix() / 15))
 
@@ -23,6 +62,37 @@ func mockResourceSummary() ResourceSummary {
 
 	totalGPU := 16
 	usedGPU := 4 + rng.Intn(8)
+
+	return ResourceSummary{
+		CPU: ResourceMetric{
+			Used:      usedCPU,
+			Available: totalCPU - usedCPU,
+			Total:     totalCPU,
+		},
+		Memory: ResourceMetric{
+			Used:      usedMemory,
+			Available: totalMemory - usedMemory,
+			Total:     totalMemory,
+		},
+		GPU: ResourceMetric{
+			Used:      usedGPU,
+			Available: totalGPU - usedGPU,
+			Total:     totalGPU,
+		},
+	}
+}
+
+func mockHistoricalSummary(index int) ResourceSummary {
+	rng := rand.New(rand.NewSource(int64(1000 + index*17)))
+
+	totalCPU := 256
+	usedCPU := 72 + rng.Intn(120)
+
+	totalMemory := 1024 * 8
+	usedMemory := 1024 + rng.Intn(1024*5)
+
+	totalGPU := 16
+	usedGPU := rng.Intn(12)
 
 	return ResourceSummary{
 		CPU: ResourceMetric{

@@ -254,9 +254,18 @@ func runServer(skipFrontendCheck bool) {
 		DefaultDoc: globalConfig.DefaultDoc,
 	}
 	if globalConfig.Slurm.Enabled {
+		slurm.ConfigureHistory(
+			globalConfig.Slurm.IntervalSec,
+			globalConfig.Slurm.HistoryIntervalMin,
+			globalConfig.Slurm.HistoryRetentionHour,
+		)
 		globalConfig.Slurm.Available = slurm.IsAvailable()
 		if !globalConfig.Slurm.Available && isDevMode {
 			slurm.EnableMockMode()
+			slurm.PreloadMockHistory(
+				globalConfig.Slurm.HistoryIntervalMin,
+				globalConfig.Slurm.HistoryRetentionHour,
+			)
 			globalConfig.Slurm.Available = true
 			log.Printf("Slurm mock mode enabled for development")
 		}

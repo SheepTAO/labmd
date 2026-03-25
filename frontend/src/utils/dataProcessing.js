@@ -12,7 +12,9 @@ export const processConfig = (data) => ({
         enabled: data?.slurm?.enabled || false,
         available: data?.slurm?.available || false,
         intervalSec: data?.slurm?.intervalSec ?? 2,
-        defaultJobs: data?.slurm?.defaultJobs ?? 10
+        defaultJobs: data?.slurm?.defaultJobs ?? 10,
+        historyIntervalMin: data?.slurm?.historyIntervalMin ?? 60,
+        historyRetentionHour: data?.slurm?.historyRetentionHour ?? 24
     },
     admin: data?.admin?.name ? {
         name: data.admin.name,

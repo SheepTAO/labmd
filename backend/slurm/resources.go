@@ -15,14 +15,15 @@ type ResourceMetric struct {
 }
 
 type ResourceSummary struct {
-	CPU    ResourceMetric `json:"cpu"`
-	Memory ResourceMetric `json:"memory"`
-	GPU    ResourceMetric `json:"gpu"`
+	CPU     ResourceMetric  `json:"cpu"`
+	Memory  ResourceMetric  `json:"memory"`
+	GPU     ResourceMetric  `json:"gpu"`
+	History ResourceHistory `json:"history"`
 }
 
 func GetResourceSummary() (ResourceSummary, error) {
 	if mockMode {
-		return mockResourceSummary(), nil
+		return attachHistory(mockResourceSummary()), nil
 	}
 
 	summary := ResourceSummary{}
@@ -60,6 +61,12 @@ func GetResourceSummary() (ResourceSummary, error) {
 		allocMemory := parseIntField(line, `AllocMem=(\d+)`)
 		totalGPU := parseGPUCount(line, `CfgTRES=([^\s]+)`)
 		allocGPU := parseGPUCount(line, `AllocTRES=([^\s]+)`)
+		if totalGPU == 0 {
+			totalGPU = parseGresGPUCount(line, `Gres=([^\s]+)`)
+		}
+		if allocGPU == 0 {
+			allocGPU = parseGresGPUCount(line, `GresUsed=([^\s]+)`)
+		}
 
 		summary.Memory.Total += realMemory
 		summary.Memory.Used += allocMemory
@@ -70,7 +77,7 @@ func GetResourceSummary() (ResourceSummary, error) {
 	summary.Memory.Available = max(summary.Memory.Total-summary.Memory.Used, 0)
 	summary.GPU.Available = max(summary.GPU.Total-summary.GPU.Used, 0)
 
-	return summary, nil
+	return attachHistory(summary), nil
 }
 
 func parseCPUState(value string) (int, int, int, int, error) {
@@ -133,6 +140,36 @@ func parseGPUCount(line, pattern string) int {
 		}
 
 		count, err := strconv.Atoi(parts[1])
+		if err != nil {
+			continue
+		}
+		total += count
+	}
+
+	return total
+}
+
+func parseGresGPUCount(line, pattern string) int {
+	re := regexp.MustCompile(pattern)
+	match := re.FindStringSubmatch(line)
+	if len(match) < 2 {
+		return 0
+	}
+
+	items := strings.Split(match[1], ",")
+	total := 0
+	for _, item := range items {
+		if !strings.Contains(item, "gpu") {
+			continue
+		}
+
+		parts := strings.Split(item, ":")
+		if len(parts) == 0 {
+			continue
+		}
+
+		last := parts[len(parts)-1]
+		count, err := strconv.Atoi(last)
 		if err != nil {
 			continue
 		}
