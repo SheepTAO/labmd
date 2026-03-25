@@ -1,0 +1,18 @@
+{
+  "projectName": "My Lab",
+  "labName": "Research Lab",
+  "port": 8089,
+  "docsPath": "../dev",
+  "monitor": {
+    "intervalCRGSec": 2,
+    "intervalDiskHours": 4,
+    "idleTimeoutSec": 60,
+    "idleIntervalCRGSec": 300
+  },
+  "disk": {
+    "includedPartitions": {"/": "System"}
+  },
+  "slurm": {
+    "enabled": true
+  }
+}

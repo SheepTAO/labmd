@@ -2,9 +2,6 @@
 build/
 release/
 
-# Development/test directories
-dev/
-
 # Environment and config files
 .env
 *.log
@@ -15,7 +12,3 @@ dev/
 # OS files
 .DS_Store
 Thumbs.db
-
-# pixi environments
-.pixi/*
-!.pixi/config.toml
