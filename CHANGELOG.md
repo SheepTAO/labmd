@@ -14,6 +14,7 @@ All notable changes to LabMD will be documented in this file.
 
 - Reorganized backend code by feature directories to make future additions easier
 - Refined the Slurm page layout, filters, and job table behavior
+- Improved `labmd upgrade` version checks and Slurm dark-mode styling
 - Adjusted shared docs installation permissions so uploaded files stay readable without becoming world-writable
 
 ## [v0.1.2] - 2026-03-24

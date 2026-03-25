@@ -58,14 +58,31 @@ compare_versions() {
 
 resolve_latest_version() {
     local latest_url
+    echo -e "${BLUE}Checking latest release...${NC}" >&2
 
     if command -v curl >/dev/null 2>&1; then
-        latest_url=$(curl -fsSL -o /dev/null -w '%{url_effective}' "https://github.com/SheepTAO/labmd/releases/latest")
+        latest_url=$(curl -fsSL --connect-timeout 10 --max-time 30 -o /dev/null -w '%{url_effective}' "https://github.com/SheepTAO/labmd/releases/latest")
     else
-        latest_url=$(wget --max-redirect=20 --server-response --spider "https://github.com/SheepTAO/labmd/releases/latest" 2>&1 | awk '/^  Location: / {print $2}' | tail -n 1 | tr -d '\r')
+        latest_url=$(wget --timeout=30 --tries=1 --max-redirect=20 --server-response --spider "https://github.com/SheepTAO/labmd/releases/latest" 2>&1 | awk '/^  Location: / {print $2}' | tail -n 1 | tr -d '\r')
     fi
 
     basename "$latest_url"
+}
+
+download_archive() {
+    local source_url="$1"
+    local output_path="$2"
+
+    echo -e "${BLUE}Downloading package...${NC}"
+
+    if command -v curl >/dev/null 2>&1; then
+        curl -fL --progress-bar --connect-timeout 10 --max-time 600 --retry 2 --retry-delay 2 "$source_url" -o "$output_path"
+    elif command -v wget >/dev/null 2>&1; then
+        wget --progress=bar:force --timeout=30 --tries=2 -O "$output_path" "$source_url"
+    else
+        echo -e "${RED}curl or wget is required for upgrades${NC}"
+        exit 1
+    fi
 }
 
 CURRENT_VERSION=""
@@ -73,11 +90,19 @@ if [ -x "/usr/local/bin/labmd" ]; then
     CURRENT_VERSION=$(/usr/local/bin/labmd --version 2>/dev/null || echo "")
 fi
 
+echo -e "${BLUE}[LabMD Upgrade]${NC}"
+echo -e "  Current: ${GREEN}${CURRENT_VERSION:-unknown}${NC}"
+
 if [ "$VERSION" = "latest" ]; then
-    TARGET_VERSION=$(resolve_latest_version)
+    if ! TARGET_VERSION=$(resolve_latest_version); then
+        echo -e "${RED}Failed to determine the latest LabMD release. Check your network and try again.${NC}"
+        exit 1
+    fi
 else
     TARGET_VERSION="$VERSION"
 fi
+
+echo -e "  Target:  ${GREEN}$TARGET_VERSION${NC}"
 
 if [ -n "$CURRENT_VERSION" ]; then
     VERSION_COMPARE=$(compare_versions "$CURRENT_VERSION" "$TARGET_VERSION")
@@ -98,11 +123,7 @@ if [ -n "$CURRENT_VERSION" ]; then
     fi
 fi
 
-if [ "$VERSION" = "latest" ]; then
-    DOWNLOAD_URL="https://github.com/SheepTAO/labmd/releases/latest/download/$PACKAGE_NAME"
-else
-    DOWNLOAD_URL="https://github.com/SheepTAO/labmd/releases/download/$VERSION/$PACKAGE_NAME"
-fi
+DOWNLOAD_URL="https://github.com/SheepTAO/labmd/releases/download/$TARGET_VERSION/$PACKAGE_NAME"
 
 TMP_DIR=$(mktemp -d)
 cleanup() {
@@ -112,19 +133,8 @@ trap cleanup EXIT
 
 ARCHIVE_PATH="$TMP_DIR/$PACKAGE_NAME"
 
-echo -e "${BLUE}[LabMD Upgrade]${NC}"
-echo -e "  Current: ${GREEN}${CURRENT_VERSION:-unknown}${NC}"
-echo -e "  Target:  ${GREEN}$TARGET_VERSION${NC}"
 echo -e "  Source: ${BLUE}$DOWNLOAD_URL${NC}"
-
-if command -v curl >/dev/null 2>&1; then
-    curl -fL "$DOWNLOAD_URL" -o "$ARCHIVE_PATH"
-elif command -v wget >/dev/null 2>&1; then
-    wget -O "$ARCHIVE_PATH" "$DOWNLOAD_URL"
-else
-    echo -e "${RED}curl or wget is required for upgrades${NC}"
-    exit 1
-fi
+download_archive "$DOWNLOAD_URL" "$ARCHIVE_PATH"
 
 tar -xzf "$ARCHIVE_PATH" -C "$TMP_DIR"
 

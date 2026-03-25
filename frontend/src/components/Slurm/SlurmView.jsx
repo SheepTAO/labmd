@@ -18,19 +18,19 @@ const getStateClasses = (state) => {
   const normalized = (state || '').toUpperCase();
 
   if (normalized.includes('RUN')) {
-    return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300';
+    return 'bg-emerald-50 text-emerald-700 border border-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-800/60';
   }
   if (normalized.includes('PEND')) {
-    return 'bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300';
+    return 'bg-amber-50 text-amber-700 border border-amber-100 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-800/60';
   }
   if (normalized.includes('COMP')) {
-    return 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-300';
+    return 'bg-indigo-50 text-indigo-700 border border-indigo-100 dark:bg-indigo-950/30 dark:text-indigo-300 dark:border-indigo-800/60';
   }
   if (normalized.includes('FAIL') || normalized.includes('CANCEL') || normalized.includes('TIMEOUT')) {
-    return 'bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-300';
+    return 'bg-rose-50 text-rose-700 border border-rose-100 dark:bg-rose-950/30 dark:text-rose-300 dark:border-rose-800/60';
   }
 
-  return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300';
+  return 'bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-600/70';
 };
 
 const compareJobsById = (a, b) => {
@@ -126,16 +126,16 @@ const SlurmView = ({ config }) => {
 
   const cardColors = {
     indigo: {
-      shell: 'bg-indigo-50/80 border-indigo-100 text-indigo-600 dark:bg-indigo-950/20 dark:border-indigo-900/40 dark:text-indigo-400 shadow-md shadow-indigo-100/60 dark:shadow-slate-950/30',
-      badge: 'bg-white dark:bg-slate-800 border-indigo-100 dark:border-indigo-900/40',
+      shell: 'bg-indigo-50/80 border-indigo-100 text-indigo-600 dark:bg-indigo-950/20 dark:border-indigo-700/55 dark:text-indigo-400 shadow-md shadow-indigo-100/60 dark:shadow-slate-950/30',
+      badge: 'bg-white dark:bg-slate-800 border-indigo-100 dark:border-indigo-700/55',
     },
     emerald: {
-      shell: 'bg-emerald-50/80 border-emerald-100 text-emerald-600 dark:bg-emerald-950/20 dark:border-emerald-900/40 dark:text-emerald-400 shadow-md shadow-emerald-100/60 dark:shadow-slate-950/30',
-      badge: 'bg-white dark:bg-slate-800 border-emerald-100 dark:border-emerald-900/40',
+      shell: 'bg-emerald-50/80 border-emerald-100 text-emerald-600 dark:bg-emerald-950/20 dark:border-emerald-700/55 dark:text-emerald-400 shadow-md shadow-emerald-100/60 dark:shadow-slate-950/30',
+      badge: 'bg-white dark:bg-slate-800 border-emerald-100 dark:border-emerald-700/55',
     },
     amber: {
-      shell: 'bg-amber-50/80 border-amber-100 text-amber-600 dark:bg-amber-950/20 dark:border-amber-900/40 dark:text-amber-400 shadow-md shadow-amber-100/60 dark:shadow-slate-950/30',
-      badge: 'bg-white dark:bg-slate-800 border-amber-100 dark:border-amber-900/40',
+      shell: 'bg-amber-50/80 border-amber-100 text-amber-600 dark:bg-amber-950/20 dark:border-amber-700/55 dark:text-amber-400 shadow-md shadow-amber-100/60 dark:shadow-slate-950/30',
+      badge: 'bg-white dark:bg-slate-800 border-amber-100 dark:border-amber-700/55',
     },
   };
 
