@@ -190,11 +190,13 @@ if [ "$INSTALL_MODE" = "fresh" ]; then
         chmod 1777 /home/labmd
         chmod 1777 "$DOCS_PATH"
         find "$DOCS_PATH" -type d -exec chmod 1777 {} \; 2>/dev/null || true
-        find "$DOCS_PATH" -type f -exec chmod 666 {} \; 2>/dev/null || true
+        find "$DOCS_PATH" -type f -exec chmod 644 {} \; 2>/dev/null || true
         
         if command -v setfacl &> /dev/null; then
-            setfacl -R -m d:u::rwx,d:g::rwx,d:o::rwx /home/labmd 2>/dev/null || true
-            echo -e "${GREEN}[OK]${NC} ACL permissions configured"
+            # New files should be readable by everyone, but not world-writable by default.
+            setfacl -m d:o::rX "$DOCS_PATH" 2>/dev/null || true
+            find "$DOCS_PATH" -type f -exec setfacl -m o::r {} \; 2>/dev/null || true
+            echo -e "${GREEN}[OK]${NC} ACL read permissions configured"
         fi
         
         echo -e "${GREEN}[OK]${NC} Shared directory configured"

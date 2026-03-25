@@ -7,6 +7,7 @@ All notable changes to LabMD will be documented in this file.
 ### Fixes
 
 - Corrected the frontend GPU VRAM percentage display to use actual memory occupancy
+- Adjusted shared docs installation permissions so uploaded files default to readable instead of world-writable
 
 ## [v0.1.1] - 2026-01-16
 
