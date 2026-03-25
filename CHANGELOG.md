@@ -4,11 +4,6 @@ All notable changes to LabMD will be documented in this file.
 
 ## [v0.1.2] - 2026-03-24
 
-### Development
-
-- Switched local development and release automation to a Pixi-managed toolchain
-- Updated the development workflow and release process documentation
-
 ### Fixes
 
 - Corrected the frontend GPU VRAM percentage display to use actual memory occupancy

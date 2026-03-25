@@ -17,37 +17,6 @@ log() {
     echo -e "${GREEN}[BUILD]${NC} $1"
 }
 
-warn() {
-    echo -e "\033[1;33m[BUILD]\033[0m $1"
-}
-
-ensure_c_compiler() {
-    local cc_bin="${CC:-}"
-    local cxx_bin="${CXX:-}"
-
-    if [ -n "$cc_bin" ] && ! command -v "$cc_bin" >/dev/null 2>&1; then
-        if command -v gcc >/dev/null 2>&1; then
-            warn "Configured CC '$cc_bin' not found, falling back to system gcc"
-            export CC="gcc"
-        fi
-    fi
-
-    if [ -n "$cxx_bin" ] && ! command -v "$cxx_bin" >/dev/null 2>&1; then
-        if command -v g++ >/dev/null 2>&1; then
-            warn "Configured CXX '$cxx_bin' not found, falling back to system g++"
-            export CXX="g++"
-        fi
-    fi
-
-    if [ -z "${CC:-}" ] && command -v gcc >/dev/null 2>&1; then
-        export CC="gcc"
-    fi
-
-    if [ -z "${CXX:-}" ] && command -v g++ >/dev/null 2>&1; then
-        export CXX="g++"
-    fi
-}
-
 # Clean previous builds
 clean() {
     log "Cleaning previous builds..."
@@ -78,7 +47,6 @@ build_frontend() {
 build_backend() {
     log "Building backend for multiple platforms..."
     cd backend
-    ensure_c_compiler
     
     # Define platforms (currently only Linux amd64)
     platforms=(
