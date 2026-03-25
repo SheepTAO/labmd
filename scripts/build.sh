@@ -109,6 +109,10 @@ prepare_releases() {
         # Copy uninstall script
         cp scripts/uninstall.sh "$pkg_dir/"
         chmod +x "$pkg_dir/uninstall.sh"
+
+        # Copy upgrade script
+        cp scripts/upgrade.sh "$pkg_dir/"
+        chmod +x "$pkg_dir/upgrade.sh"
         
         # Create versioned tarball (for archive)
         tar -czf "$RELEASE_DIR/labmd-$platform-$VERSION.tar.gz" -C "$BUILD_DIR" "labmd-$platform-$VERSION"

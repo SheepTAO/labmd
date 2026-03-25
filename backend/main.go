@@ -12,6 +12,7 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"os"
+	"os/exec"
 	"sync"
 	"time"
 )
@@ -61,6 +62,7 @@ func main() {
 Usage:
   labmd [options]
   labmd server [options]
+  labmd upgrade [version]
 
 Options:
   --version, -v    Show version information
@@ -70,6 +72,8 @@ Options:
 Commands:
   server           Start the LabMD server
     --skip-frontend  Skip frontend directory check (for local frontend development)
+  upgrade          Download and install the latest release
+    version        Optional tag such as v0.2.0
 
 Version: %s
 Build Time: %s
@@ -101,6 +105,19 @@ Build Time: %s
 			devCmd.Parse(os.Args[2:])
 			startServerDev()
 			return
+
+		case "upgrade":
+			updateCmd := flag.NewFlagSet("upgrade", flag.ExitOnError)
+			updateCmd.Usage = func() {
+				fmt.Fprintf(updateCmd.Output(), "Usage: labmd upgrade [version]\n\nDownload and install the latest LabMD release.\n\nExamples:\n  sudo labmd upgrade\n  sudo labmd upgrade v0.2.0\n")
+			}
+			updateCmd.Parse(os.Args[2:])
+			targetVersion := "latest"
+			if updateCmd.NArg() > 0 {
+				targetVersion = updateCmd.Arg(0)
+			}
+			runUpgrade(targetVersion)
+			return
 		}
 	}
 
@@ -128,6 +145,24 @@ Build Time: %s
 	if flag.NArg() > 0 {
 		fmt.Fprintf(os.Stderr, "Unknown command: %s\n\n", flag.Arg(0))
 		flag.Usage()
+		os.Exit(1)
+	}
+}
+
+func runUpgrade(targetVersion string) {
+	upgradeScript := "/usr/share/labmd/upgrade.sh"
+	if _, err := os.Stat(upgradeScript); err != nil {
+		fmt.Fprintf(os.Stderr, "Upgrade script not found at %s. Reinstall LabMD first.\n", upgradeScript)
+		os.Exit(1)
+	}
+
+	cmd := exec.Command(upgradeScript, targetVersion)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		fmt.Fprintf(os.Stderr, "Upgrade failed: %v\n", err)
 		os.Exit(1)
 	}
 }

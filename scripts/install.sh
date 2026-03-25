@@ -44,12 +44,16 @@ if [ -n "$CURRENT_VERSION" ]; then
     echo
     echo -e "${BLUE}What's new?${NC} https://github.com/SheepTAO/labmd/blob/main/CHANGELOG.md"
     echo
-    echo -n "Proceed with upgrade? [y/N]: "
-    read confirm
-    
-    if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
-        echo -e "${RED}Upgrade cancelled.${NC}"
-        exit 0
+    if [ "${LABMD_AUTO_YES:-0}" = "1" ]; then
+        echo -e "${GREEN}Auto-confirmed upgrade${NC}"
+    else
+        echo -n "Proceed with upgrade? [y/N]: "
+        read confirm
+        
+        if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
+            echo -e "${RED}Upgrade cancelled.${NC}"
+            exit 0
+        fi
     fi
     
     INSTALL_MODE="upgrade"
@@ -168,6 +172,10 @@ echo -e "${GREEN}[OK]${NC} Frontend installed"
 # Copy uninstall script
 cp uninstall.sh /usr/share/labmd/
 chmod +x /usr/share/labmd/uninstall.sh
+
+# Copy upgrade script
+cp upgrade.sh /usr/share/labmd/
+chmod +x /usr/share/labmd/upgrade.sh
 
 # Setup docs directory (only for fresh install)
 if [ "$INSTALL_MODE" = "fresh" ]; then
@@ -306,6 +314,7 @@ if command -v systemctl &> /dev/null; then
     echo -e "  Stop:    sudo systemctl stop labmd"
     echo -e "  Restart: sudo systemctl restart labmd"
     echo -e "  Logs:    sudo journalctl -u labmd -f"
+    echo -e "  Upgrade: sudo labmd upgrade"
     echo
     echo -e "  ${RED}Uninstall: sudo /usr/share/labmd/uninstall.sh${NC}"
 fi

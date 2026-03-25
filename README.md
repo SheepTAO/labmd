@@ -96,6 +96,18 @@ sudo journalctl -u labmd -f     # View logs
 
 To upgrade an existing installation to a new version:
 
+**Recommended:**
+```bash
+sudo labmd upgrade
+```
+
+You can also install a specific release:
+```bash
+sudo labmd upgrade v0.2.0
+```
+
+Or use the manual package workflow:
+
 **1. Download and extract new version**
 ```bash
 wget https://github.com/SheepTAO/labmd/releases/latest/download/labmd-linux-amd64.tar.gz
@@ -212,6 +224,10 @@ LabMD provides a simple command-line interface for management:
 # Start the server
 labmd server                    # Normal mode (loads frontend from dist)
 labmd server --skip-frontend    # Skip frontend check (for custom frontend dev)
+
+# Upgrade to latest release
+sudo labmd upgrade
+sudo labmd upgrade v0.2.0
 
 # Display system and configuration information
 labmd --info

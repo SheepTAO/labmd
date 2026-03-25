@@ -8,6 +8,7 @@ All notable changes to LabMD will be documented in this file.
 
 - Added optional Slurm support with resource overview and job queue pages
 - Added development mock data for Slurm when running locally without a Slurm installation
+- Added `labmd upgrade` command for downloading and installing new releases
 
 ### Changed
 
