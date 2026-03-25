@@ -1,6 +1,8 @@
 package main
 
 import (
+	"LabMD-backend/docs"
+	"LabMD-backend/monitor"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -24,19 +26,18 @@ var (
 	lastAccessTime time.Time
 	isIdle         bool
 	idleMutex      sync.RWMutex
-	stateChangeCh  = make(chan bool, 1) // Signal channel for immediate state check
+	stateChangeCh  = make(chan bool, 1)
 )
 
-// --- Data Structures ---
 type SystemStats struct {
-	System  SystemInfo    `json:"system"`
-	CPU     CPUStats      `json:"cpu"`
-	RAM     RAMStats      `json:"ram"`
-	GPU     GPUStats      `json:"gpu"`
-	GPUs    []GPUStatsSeq `json:"gpus"`
-	Disk    DiskStats     `json:"disk"`
-	History HistoryStats  `json:"history"`
-	Updated string        `json:"updated"`
+	System  monitor.SystemInfo    `json:"system"`
+	CPU     monitor.CPUStats      `json:"cpu"`
+	RAM     monitor.RAMStats      `json:"ram"`
+	GPU     monitor.GPUStats      `json:"gpu"`
+	GPUs    []monitor.GPUStatsSeq `json:"gpus"`
+	Disk    monitor.DiskStats     `json:"disk"`
+	History HistoryStats          `json:"history"`
+	Updated string                `json:"updated"`
 }
 
 type HistoryStats struct {
@@ -153,28 +154,34 @@ func showInfo() {
 		globalConfig.Monitor.HistoryCPU, globalConfig.Monitor.HistoryGPU, globalConfig.Monitor.HistoryRAM)
 
 	fmt.Printf("=== System Overview ===\n")
-	sys := GetStaticSystemInfo()
+	sys := monitor.GetStaticSystemInfo()
 	fmt.Printf("Hostname:     %s\n", sys.Hostname)
 	fmt.Printf("OS:           %s\n", sys.OS)
 	fmt.Printf("Kernel:       %s\n", sys.Kernel)
 
-	cpu := GetCPURealTime()
+	cpu := monitor.GetCPURealTime()
 	if cpu.Model != "" {
 		fmt.Printf("CPU:          %s\n", cpu.Model)
 		fmt.Printf("CPU Cores:    %d cores / %d threads\n", cpu.Cores, cpu.Threads)
 	}
 
-	ram := GetRAMRealTime()
+	ram := monitor.GetRAMRealTime()
 	fmt.Printf("RAM:          %.1fGB\n", ram.Total)
 
-	gpu, _ := GetGPURealTime()
+	gpu, _ := monitor.GetGPURealTime()
 	if gpu.Name != "" && gpu.Name != "No GPU" {
 		fmt.Printf("GPU:          %s\n", gpu.Name)
 		fmt.Printf("GPU Memory:   %dMB\n", gpu.MemTotal)
 		fmt.Printf("CUDA:         %s\n", gpu.CUDA)
 	}
 
-	disk := GetDiskUsage(true)
+	diskConfig := monitor.DiskConfig{
+		IncludedPartitions: globalConfig.Disk.IncludedPartitions,
+		IgnoredPartitions:  globalConfig.Disk.IgnoredPartitions,
+		IgnoredUsers:       globalConfig.Disk.IgnoredUsers,
+		MaxUsersToList:     globalConfig.Disk.MaxUsersToList,
+	}
+	disk := monitor.GetDiskUsage(diskConfig, true)
 	if disk.Total > 0 {
 		fmt.Printf("Disk:         %.2fTB / %.2fTB (%.1f%%)\n",
 			float64(disk.Used)/1000, float64(disk.Total)/1000,
@@ -191,6 +198,17 @@ func startServerDev() {
 }
 
 func runServer(skipFrontendCheck bool) {
+	diskConfig := monitor.DiskConfig{
+		IncludedPartitions: globalConfig.Disk.IncludedPartitions,
+		IgnoredPartitions:  globalConfig.Disk.IgnoredPartitions,
+		IgnoredUsers:       globalConfig.Disk.IgnoredUsers,
+		MaxUsersToList:     globalConfig.Disk.MaxUsersToList,
+	}
+	docsConfig := docs.Config{
+		DocsPath:   globalConfig.DocsPath,
+		DocsDepth:  globalConfig.DocsDepth,
+		DefaultDoc: globalConfig.DefaultDoc,
+	}
 
 	log.Printf("Initializing %s Backend (%s)...", globalConfig.ProjectName, Version)
 	log.Printf("Paths: Dist=%s, Docs=%s", DistPath, globalConfig.DocsPath)
@@ -200,7 +218,7 @@ func runServer(skipFrontendCheck bool) {
 		globalConfig.Monitor.IdleTimeout)
 
 	// 1. Initialize Data
-	globalStats.System = GetStaticSystemInfo()
+	globalStats.System = monitor.GetStaticSystemInfo()
 	globalStats.History = HistoryStats{
 		CPULoad: make([]int, globalConfig.Monitor.HistoryCPU),
 		GPULoad: make([]int, globalConfig.Monitor.HistoryGPU),
@@ -211,7 +229,7 @@ func runServer(skipFrontendCheck bool) {
 	isIdle = false
 
 	// Cleanup NVML on exit
-	defer ShutdownNVML()
+	defer monitor.ShutdownNVML()
 
 	// 2. Start High-Frequency Monitoring (CRG: CPU, RAM, GPU) with adaptive interval
 	go func() {
@@ -237,12 +255,6 @@ func runServer(skipFrontendCheck bool) {
 
 			// Handle state transitions
 			if wasIdle != shouldBeIdle {
-				if shouldBeIdle {
-					log.Printf("Monitor state: Active → Idle (no activity for %ds)", globalConfig.Monitor.IdleTimeout)
-				} else {
-					log.Printf("Monitor state: Idle → Active (new connection detected)")
-				}
-
 				var newInterval time.Duration
 				if shouldBeIdle {
 					newInterval = time.Duration(globalConfig.Monitor.IdleIntervalCRG) * time.Second
@@ -275,7 +287,7 @@ func runServer(skipFrontendCheck bool) {
 	// 3. Start Low-Frequency Monitoring (Disk) - Fixed interval, not affected by idle state
 	go func() {
 		// Initial scan
-		updateDiskStats()
+		updateDiskStats(diskConfig)
 
 		// Disk data changes slowly, use fixed interval (no idle adjustment)
 		interval := time.Duration(globalConfig.Monitor.IntervalDisk * float64(time.Hour))
@@ -284,15 +296,15 @@ func runServer(skipFrontendCheck bool) {
 		defer ticker.Stop()
 
 		for range ticker.C {
-			updateDiskStats()
+			updateDiskStats(diskConfig)
 		}
 	}()
 
 	// 4. Configure Web Routes
 	http.HandleFunc("/api/stats", handleStats)
 	http.HandleFunc("/api/config", handleConfig)
-	http.HandleFunc("/api/docs/tree", handleDocsTree)
-	http.HandleFunc("/api/docs/content", handleDocsContent)
+	http.HandleFunc("/api/docs/tree", docs.TreeHandler(docsConfig))
+	http.HandleFunc("/api/docs/content", docs.ContentHandler(docsConfig))
 
 	// 5. Configure Frontend Static Files
 	if skipFrontendCheck {
@@ -331,9 +343,9 @@ func runServer(skipFrontendCheck bool) {
 }
 
 func updateRealTimeStats() {
-	cpu := GetCPURealTime()
-	ram := GetRAMRealTime()
-	gpu, gpus := GetGPURealTime()
+	cpu := monitor.GetCPURealTime()
+	ram := monitor.GetRAMRealTime()
+	gpu, gpus := monitor.GetGPURealTime()
 
 	dataMutex.Lock()
 	defer dataMutex.Unlock()
@@ -343,8 +355,8 @@ func updateRealTimeStats() {
 	globalStats.GPU = gpu
 	globalStats.GPUs = gpus
 	globalStats.Updated = time.Now().Format("15:04:05")
-	globalStats.System.Uptime = GetUptime()
-	globalStats.System.LoadAvg = GetLoadAvg()
+	globalStats.System.Uptime = monitor.GetUptime()
+	globalStats.System.LoadAvg = monitor.GetLoadAvg()
 
 	// Update History (FIFO Queue)
 	updateHistory := func(queue []int, val int) []int {
@@ -356,8 +368,8 @@ func updateRealTimeStats() {
 	globalStats.History.GPULoad = updateHistory(globalStats.History.GPULoad, gpu.AvgUtil)
 }
 
-func updateDiskStats() {
-	disk := GetDiskUsage(false)
+func updateDiskStats(diskConfig monitor.DiskConfig) {
+	disk := monitor.GetDiskUsage(diskConfig, false)
 
 	dataMutex.Lock()
 	defer dataMutex.Unlock()

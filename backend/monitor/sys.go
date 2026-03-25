@@ -1,4 +1,4 @@
-package main
+package monitor
 
 import (
 	"os"
@@ -18,20 +18,16 @@ type SystemInfo struct {
 func GetStaticSystemInfo() SystemInfo {
 	info := SystemInfo{}
 
-	// Get Hostname
 	info.Hostname, _ = os.Hostname()
 
-	// Get Kernel Version (uname -r)
 	out, _ := exec.Command("uname", "-r").Output()
 	info.Kernel = strings.TrimSpace(string(out))
 
-	// Get OS Version Name
 	info.OS = "Linux"
 	if data, err := os.ReadFile("/etc/os-release"); err == nil {
 		lines := strings.Split(string(data), "\n")
 		for _, line := range lines {
 			if strings.HasPrefix(line, "PRETTY_NAME=") {
-				// Remove quotes
 				info.OS = strings.Trim(strings.TrimPrefix(line, "PRETTY_NAME="), "\"")
 				break
 			}
@@ -41,7 +37,6 @@ func GetStaticSystemInfo() SystemInfo {
 	return info
 }
 
-// Get Uptime
 func GetUptime() string {
 	data, _ := os.ReadFile("/proc/uptime")
 	parts := strings.Fields(string(data))
@@ -55,7 +50,6 @@ func GetUptime() string {
 	return "--"
 }
 
-// Get System Load Average (1 min)
 func GetLoadAvg() float64 {
 	data, err := os.ReadFile("/proc/loadavg")
 	if err != nil {

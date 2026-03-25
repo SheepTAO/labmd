@@ -1,4 +1,4 @@
-package main
+package monitor
 
 import (
 	"bytes"
@@ -15,7 +15,12 @@ import (
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
 )
 
-// Define data structures: used by main.go and converted to JSON
+const (
+	bytesToMB        = 1024 * 1024
+	kbToGB           = bytesToMB
+	cpuSampleInterval = 200 * time.Millisecond
+)
+
 type CPUStats struct {
 	Load    int    `json:"load"`
 	Model   string `json:"model"`
@@ -54,33 +59,28 @@ type GPUStats struct {
 }
 
 var (
-	// Cache CPU, GPU models, as they don't change, no need to read file every time
 	staticCPUInfo CPUStats
 	staticGPUInfo GPUStats
 
 	cpuInfoLoaded bool
 	gpuInfoLoaded bool
 
-	// NVML state (initialized once if available)
 	nvmlInitialized bool
 	nvmlAvailable   bool
 	nvmlDeviceCount int
 )
 
-// Get CPU Real-time stats
 func GetCPURealTime() CPUStats {
-	// If first run, read CPU model
 	if !cpuInfoLoaded {
 		loadStaticCPUInfo()
 		cpuInfoLoaded = true
 	}
 
-	stats := staticCPUInfo          // Copy static info
-	stats.Load = calculateCPULoad() // Calculate current load
+	stats := staticCPUInfo
+	stats.Load = calculateCPULoad()
 	return stats
 }
 
-// Load static CPU info from /proc/cpuinfo
 func loadStaticCPUInfo() {
 	staticCPUInfo.Model = "Unknown CPU"
 	staticCPUInfo.Cores = 0
@@ -125,7 +125,6 @@ func loadStaticCPUInfo() {
 		}
 	}
 
-	// Calculate total physical cores
 	numSockets := len(sockets)
 	if numSockets == 0 {
 		numSockets = 1
@@ -139,7 +138,6 @@ func loadStaticCPUInfo() {
 
 	staticCPUInfo.Threads = threadCount
 
-	// Format display name for multiple sockets
 	if numSockets > 1 {
 		staticCPUInfo.Model = fmt.Sprintf("%dx %s", numSockets, modelName)
 	} else {
@@ -147,7 +145,6 @@ func loadStaticCPUInfo() {
 	}
 }
 
-// Calculate CPU load percentage by sampling /proc/stat twice
 func calculateCPULoad() int {
 	readStat := func() (int, int) {
 		data, _ := os.ReadFile("/proc/stat")
@@ -155,10 +152,12 @@ func calculateCPULoad() int {
 		if len(lines) == 0 {
 			return 0, 0
 		}
+
 		parts := strings.Fields(lines[0])
 		if len(parts) < 5 {
 			return 0, 0
 		}
+
 		idle, _ := strconv.Atoi(parts[4])
 		total := 0
 		for _, v := range parts[1:] {
@@ -168,9 +167,8 @@ func calculateCPULoad() int {
 		return idle, total
 	}
 
-	// Sample twice with 200ms interval for more stable readings
 	idle1, total1 := readStat()
-	time.Sleep(CPUSampleInterval)
+	time.Sleep(cpuSampleInterval)
 	idle2, total2 := readStat()
 
 	totalDelta := float64(total2 - total1)
@@ -182,20 +180,18 @@ func calculateCPULoad() int {
 	return 0
 }
 
-// Get RAM real-time stats from /proc/meminfo
 func GetRAMRealTime() RAMStats {
 	var ram RAMStats
 	ram.Type = "DDR4 2933 MT/s"
 
 	file, err := os.Open("/proc/meminfo")
 	if err != nil {
-		return ram // Return default values on error
+		return ram
 	}
 	defer file.Close()
 
 	content, _ := io.ReadAll(file)
 
-	// Parse memory value in KB from /proc/meminfo
 	parseMem := func(key string) float64 {
 		str := string(content)
 		idx := strings.Index(str, key)
@@ -209,20 +205,18 @@ func GetRAMRealTime() RAMStats {
 			return 0
 		}
 		val, _ := strconv.ParseFloat(fields[1], 64)
-		return val // KB
+		return val
 	}
 
 	total := parseMem("MemTotal:")
 	available := parseMem("MemAvailable:")
 	used := total - available
 
-	// Convert from KB to GB with 1 decimal place
-	ram.Total = float64(int(total/KBToGB*10)) / 10.0
-	ram.Used = float64(int(used/KBToGB*10)) / 10.0
+	ram.Total = float64(int(total/kbToGB*10)) / 10.0
+	ram.Used = float64(int(used/kbToGB*10)) / 10.0
 	return ram
 }
 
-// Initialize NVML (called once, determines GPU count and CUDA version)
 func initNVML() {
 	if nvmlInitialized {
 		return
@@ -236,7 +230,6 @@ func initNVML() {
 		return
 	}
 
-	// Get device count
 	count, ret := nvml.DeviceGetCount()
 	if ret != nvml.SUCCESS {
 		log.Printf("[WARN] NVML device count failed: %v, using nvidia-smi fallback", nvml.ErrorString(ret))
@@ -250,29 +243,20 @@ func initNVML() {
 	log.Printf("NVML initialized: %d GPU(s) detected", count)
 }
 
-// ShutdownNVML cleans up NVML resources (call on program exit)
 func ShutdownNVML() {
 	if nvmlAvailable {
 		nvml.Shutdown()
 	}
 }
 
-// Get GPU real-time stats
 func GetGPURealTime() (GPUStats, []GPUStatsSeq) {
-	// Initialize NVML on first call
 	initNVML()
-
-	// Try NVML first if available
 	if nvmlAvailable {
-		stats, gpus := getGPUStatsNVML()
-		return stats, gpus
+		return getGPUStatsNVML()
 	}
-
-	// Fallback to nvidia-smi
 	return getGPUStatsNvidiaSMI()
 }
 
-// Get GPU stats using NVML library
 func getGPUStatsNVML() (GPUStats, []GPUStatsSeq) {
 	if nvmlDeviceCount == 0 {
 		return GPUStats{}, []GPUStatsSeq{}
@@ -288,21 +272,17 @@ func getGPUStatsNVML() (GPUStats, []GPUStatsSeq) {
 		util, _ := dev.GetUtilizationRates()
 		mem, _ := dev.GetMemoryInfo()
 		temp, _ := dev.GetTemperature(nvml.TEMPERATURE_GPU)
-		power, _ := dev.GetPowerUsage() // milliwatts
-		fan, _ := dev.GetFanSpeed()     // May not be available on all GPUs
+		power, _ := dev.GetPowerUsage()
+		fan, _ := dev.GetFanSpeed()
 
-		memTotalMB := int(mem.Total / BytesToMB)
-		memUsedMB := int(mem.Used / BytesToMB)
-		memUsagePercent := 0
-		if memTotalMB > 0 {
-			memUsagePercent = int(float64(memUsedMB) / float64(memTotalMB) * 100)
-		}
-		powerW := int(power / 1000) // Convert to watts
+		memTotalMB := int(mem.Total / bytesToMB)
+		memUsedMB := int(mem.Used / bytesToMB)
+		powerW := int(power / 1000)
 
 		gpus = append(gpus, GPUStatsSeq{
 			ID:       i,
 			Util:     int(util.Gpu),
-			MemUtil:  memUsagePercent,
+			MemUtil:  int(util.Memory),
 			MemUsed:  memUsedMB,
 			MemTotal: memTotalMB,
 			Temp:     int(temp),
@@ -313,7 +293,7 @@ func getGPUStatsNVML() (GPUStats, []GPUStatsSeq) {
 
 		memTotal += memTotalMB
 		utilTotal += int(util.Gpu)
-		memUtilTotal += memUsagePercent
+		memUtilTotal += int(util.Memory)
 		memUsed += memUsedMB
 		powerTotal += powerW
 		tempTotal += int(temp)
@@ -323,7 +303,6 @@ func getGPUStatsNVML() (GPUStats, []GPUStatsSeq) {
 		}
 	}
 
-	// Initialize static info on first call
 	if !gpuInfoLoaded {
 		staticGPUInfo.MemTotal = memTotal
 		staticGPUInfo.Name = generateGPUDisplayName(gpus)
@@ -331,7 +310,6 @@ func getGPUStatsNVML() (GPUStats, []GPUStatsSeq) {
 		gpuInfoLoaded = true
 	}
 
-	// Calculate aggregated stats
 	stats := staticGPUInfo
 	stats.AvgUtil = utilTotal / nvmlDeviceCount
 	stats.AvgMemUtil = memUtilTotal / nvmlDeviceCount
@@ -343,24 +321,23 @@ func getGPUStatsNVML() (GPUStats, []GPUStatsSeq) {
 	return stats, gpus
 }
 
-// Get GPU stats using nvidia-smi command (fallback method)
 func getGPUStatsNvidiaSMI() (GPUStats, []GPUStatsSeq) {
-	// Query all metrics in one call (index, name, memory, temp, util, power, fan)
-	cmd := exec.Command("nvidia-smi",
+	cmd := exec.Command(
+		"nvidia-smi",
 		"--query-gpu=index,name,memory.total,temperature.gpu,utilization.gpu,utilization.memory,memory.used,power.draw,fan.speed",
-		"--format=csv,noheader,nounits")
+		"--format=csv,noheader,nounits",
+	)
+
 	var out bytes.Buffer
 	cmd.Stdout = &out
-	err := cmd.Run()
-	if err != nil {
+	if err := cmd.Run(); err != nil {
 		return GPUStats{}, []GPUStatsSeq{}
 	}
 
-	gpus := make([]GPUStatsSeq, 0, 8) // Preallocate for common case
+	gpus := make([]GPUStatsSeq, 0, 8)
 	var memTotal, memUsed, utilTotal, memUtilTotal, tempTotal, powerTotal, maxTemp int
 
-	lines := strings.Split(strings.TrimSpace(out.String()), "\n")
-	for _, line := range lines {
+	for _, line := range strings.Split(strings.TrimSpace(out.String()), "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" {
 			continue
@@ -376,11 +353,8 @@ func getGPUStatsNvidiaSMI() (GPUStats, []GPUStatsSeq) {
 		memTotalMB, _ := strconv.Atoi(parts[2])
 		temp, _ := strconv.Atoi(parts[3])
 		util, _ := strconv.Atoi(parts[4])
+		memUtil, _ := strconv.Atoi(parts[5])
 		memUsedMB, _ := strconv.Atoi(parts[6])
-		memUsagePercent := 0
-		if memTotalMB > 0 {
-			memUsagePercent = int(float64(memUsedMB) / float64(memTotalMB) * 100)
-		}
 		powerFloat, _ := strconv.ParseFloat(parts[7], 64)
 		power := int(powerFloat)
 		fan, _ := strconv.Atoi(parts[8])
@@ -388,7 +362,7 @@ func getGPUStatsNvidiaSMI() (GPUStats, []GPUStatsSeq) {
 		gpus = append(gpus, GPUStatsSeq{
 			ID:       idx,
 			Util:     util,
-			MemUtil:  memUsagePercent,
+			MemUtil:  memUtil,
 			MemUsed:  memUsedMB,
 			MemTotal: memTotalMB,
 			Temp:     temp,
@@ -399,7 +373,7 @@ func getGPUStatsNvidiaSMI() (GPUStats, []GPUStatsSeq) {
 
 		memTotal += memTotalMB
 		utilTotal += util
-		memUtilTotal += memUsagePercent
+		memUtilTotal += memUtil
 		memUsed += memUsedMB
 		powerTotal += power
 		tempTotal += temp
@@ -409,12 +383,10 @@ func getGPUStatsNvidiaSMI() (GPUStats, []GPUStatsSeq) {
 		}
 	}
 
-	// Return empty if no GPUs found
 	if len(gpus) == 0 {
 		return GPUStats{}, []GPUStatsSeq{}
 	}
 
-	// Initialize static info on first call
 	if !gpuInfoLoaded {
 		staticGPUInfo.MemTotal = memTotal
 		staticGPUInfo.Name = generateGPUDisplayName(gpus)
@@ -422,7 +394,6 @@ func getGPUStatsNvidiaSMI() (GPUStats, []GPUStatsSeq) {
 		gpuInfoLoaded = true
 	}
 
-	// Calculate aggregated stats
 	stats := staticGPUInfo
 	stats.AvgUtil = utilTotal / len(gpus)
 	stats.AvgMemUtil = memUtilTotal / len(gpus)
@@ -434,7 +405,6 @@ func getGPUStatsNvidiaSMI() (GPUStats, []GPUStatsSeq) {
 	return stats, gpus
 }
 
-// Extract CUDA version from nvidia-smi output
 func getCUDAVersionNvidiaSMI() string {
 	cmd := exec.Command("nvidia-smi")
 	out, err := cmd.Output()
@@ -450,19 +420,17 @@ func getCUDAVersionNvidiaSMI() string {
 	return "--"
 }
 
-// Get CUDA version using NVML
 func getCUDAVersionNVML() string {
 	cudaVersion, ret := nvml.SystemGetCudaDriverVersion()
 	if ret != nvml.SUCCESS {
 		return "--"
 	}
-	// CUDA version is encoded as (major * 1000 + minor * 10)
+
 	major := cudaVersion / 1000
 	minor := (cudaVersion % 1000) / 10
 	return fmt.Sprintf("CUDA %d.%d", major, minor)
 }
 
-// Generate display name from GPU list (e.g., "2x RTX 4090" or "RTX 4090 ...")
 func generateGPUDisplayName(gpus []GPUStatsSeq) string {
 	if len(gpus) == 0 {
 		return "No GPU"
@@ -480,7 +448,6 @@ func generateGPUDisplayName(gpus []GPUStatsSeq) string {
 		}
 	}
 
-	// Single GPU model
 	if len(nameCounts) == 1 {
 		var name string
 		for k := range nameCounts {
@@ -492,6 +459,5 @@ func generateGPUDisplayName(gpus []GPUStatsSeq) string {
 		return name
 	}
 
-	// Mixed models: show largest memory model
 	return fmt.Sprintf("%s ...", maxMemName)
 }
