@@ -24,11 +24,11 @@ A modern monitoring and documentation system for research laboratories.
 - **System Monitoring**: Real-time CPU, GPU, RAM, and disk usage with interactive charts
 - **Documentation**: Markdown docs with LaTeX math, syntax highlighting, and file tree navigation
 - **Multi-User**: Shared directory for lab-wide collaboration
-- **Modern UI**: Glassmorphism design with smooth animations and dark mode support
-- **Theme System**: Light/Dark/Auto themes with system preference detection
+- **Modern UI**: Light/Dark/Auto themes with a clean responsive interface
 - **CLI Tools**: Simple command-line interface for server management and info display
 - **Adaptive Monitoring**: Automatic idle mode to reduce resource usage
 - **Zero Dependencies**: Single binary, no external services needed
+- **Slurm Support**: Optional Slurm queue and cluster resource overview
 
 ## Installation
 
@@ -143,6 +143,11 @@ Edit `/etc/labmd/config.json`:
   },
   "disk": {
     "includedPartitions": {"/": "System"}
+  },
+  "slurm": {
+    "enabled": true,
+    "intervalSec": 5,
+    "defaultJobs": 10
   }
 }
 ```
@@ -164,6 +169,9 @@ Edit `/etc/labmd/config.json`:
 | `idleTimeoutSec` | Idle timeout (0=never, 10-3600) | 60 |
 | `idleIntervalCRGSec` | CRG interval when idle (10-600) | 300 |
 | `includedPartitions` | Partitions to monitor | `{"/": "System"}` |
+| `slurm.enabled` | Enable optional Slurm integration | `false` |
+| `slurm.intervalSec` | Slurm data refresh interval (seconds) | `5` |
+| `slurm.defaultJobs` | Default visible job rows before scrolling | `10` |
 
 **Note**: Administrator information, if provided, will be displayed at the bottom of the interface for user support.
 
@@ -225,6 +233,8 @@ LabMD exposes the following REST APIs:
 | `/api/config` | GET | Server configuration (project name, lab name, admin info) |
 | `/api/docs/tree` | GET | Documentation file tree structure |
 | `/api/docs/content?path=<file>` | GET | Markdown file content |
+| `/api/slurm/resources` | GET | Slurm resource overview (when enabled and available) |
+| `/api/slurm/jobs` | GET | Slurm job list (when enabled and available) |
 
 All responses are in JSON format with CORS enabled for development.
 

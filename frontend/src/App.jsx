@@ -3,7 +3,7 @@ import {
   Activity, BookOpen, Menu, X,
   CircuitBoard, Tag,
   Folder, FolderOpen, ChevronRight, ChevronDown, FileText,
-  LayoutPanelTop, Home
+  LayoutPanelTop, Home, Workflow
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { processStats, processConfig } from './utils/dataProcessing';
@@ -11,6 +11,7 @@ import NavItem from './components/Common/NavItem';
 import ThemeToggle from './components/Common/ThemeToggle';
 import MonitorView from './components/Monitor/MonitorView';
 import DocsView from './components/Docs/DocsView';
+import SlurmView from './components/Slurm/SlurmView';
 
 const App = () => {
   const [activeTab, setActiveTab] = useState('monitor');
@@ -144,6 +145,12 @@ const App = () => {
     }
   }, [activeTab, fetchTree]);
 
+  useEffect(() => {
+    if (activeTab === 'slurm' && !config.slurm.available) {
+      setActiveTab('monitor');
+    }
+  }, [activeTab, config.slurm.available]);
+
   const toggleFolder = useCallback((path) => {
     setExpandedFolders(prev => ({
       ...prev,
@@ -189,6 +196,14 @@ const App = () => {
           active={activeTab === 'monitor'} 
           onClick={() => { setActiveTab('monitor'); setMobileMenuOpen(false); }} 
         />
+        {config.slurm.available && (
+          <NavItem 
+            icon={<Workflow />} 
+            label="Slurm Queue" 
+            active={activeTab === 'slurm'} 
+            onClick={() => { setActiveTab('slurm'); setMobileMenuOpen(false); }} 
+          />
+        )}
         <NavItem 
           icon={<BookOpen />} 
           label="Lab Docs" 
@@ -360,6 +375,8 @@ const App = () => {
               <div className="p-4 md:p-8 lg:p-12 max-w-[1600px] mx-auto">
                  <MonitorView stats={stats} key="monitor" />
               </div>
+            ) : activeTab === 'slurm' ? (
+              <SlurmView key="slurm" config={config.slurm} />
             ) : (
               <DocsView 
                 key="docs" 

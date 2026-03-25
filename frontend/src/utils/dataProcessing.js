@@ -8,6 +8,12 @@ export const processConfig = (data) => ({
     historyGPU: data?.monitor?.historyGPU ?? 20,
     historyRAM: data?.monitor?.historyRAM ?? 20,
     defaultDoc: data?.defaultDoc || "index.md",
+    slurm: {
+        enabled: data?.slurm?.enabled || false,
+        available: data?.slurm?.available || false,
+        intervalSec: data?.slurm?.intervalSec ?? 2,
+        defaultJobs: data?.slurm?.defaultJobs ?? 10
+    },
     admin: data?.admin?.name ? {
         name: data.admin.name,
         email: data.admin.email

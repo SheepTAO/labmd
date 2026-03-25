@@ -13,6 +13,7 @@ LabMD provides real-time system monitoring and a powerful documentation system f
 - **Code Highlighting**: Syntax highlighting for 100+ programming languages
 - **File Tree**: Hierarchical navigation with nested folders
 - **Idle Mode**: Automatically reduces monitoring frequency when no one is viewing to save resources
+- **Optional Slurm View**: If enabled in config and available on the server, LabMD can also show Slurm resources and job queues
 
 # Quick Start
 
@@ -28,6 +29,22 @@ Click **"Monitor Dashboard"** to see real-time metrics:
 - Active mode: Updates every 2 seconds when you're viewing
 - Idle mode: Reduces to 5-minute intervals after 60 seconds of inactivity
 - Instant wake: Returns to active mode when you access the page
+
+### Slurm Overview
+
+If your server uses Slurm, you can enable it in `/etc/labmd/config.json`:
+
+```json
+{
+  "slurm": {
+    "enabled": true
+  }
+}
+```
+
+When Slurm is available, LabMD will show:
+- Cluster CPU, memory, and GPU availability
+- Current job queue with filtering support
 
 ## 2. Add Documentation
 Create Markdown files in your documentation directory:

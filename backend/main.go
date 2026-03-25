@@ -3,6 +3,7 @@ package main
 import (
 	"LabMD-backend/docs"
 	"LabMD-backend/monitor"
+	"LabMD-backend/slurm"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -27,6 +28,7 @@ var (
 	isIdle         bool
 	idleMutex      sync.RWMutex
 	stateChangeCh  = make(chan bool, 1)
+	isDevMode      bool
 )
 
 type SystemStats struct {
@@ -187,10 +189,17 @@ func showInfo() {
 			float64(disk.Used)/1000, float64(disk.Total)/1000,
 			float64(disk.Used)/float64(disk.Total)*100)
 	}
+
+	fmt.Printf("=== Features ===\n")
+	if globalConfig.Slurm.Enabled {
+		globalConfig.Slurm.Available = slurm.IsAvailable()
+	}
+	fmt.Printf("Slurm:        enabled=%t available=%t\n", globalConfig.Slurm.Enabled, globalConfig.Slurm.Available)
 }
 
 func startServerDev() {
 	fmt.Println("Starting in Dev Mode...")
+	isDevMode = true
 	configPath := "../dev/config.json"
 	log.Printf("Using Dev Config Path: %s", configPath)
 	LoadConfig(configPath)
@@ -208,6 +217,16 @@ func runServer(skipFrontendCheck bool) {
 		DocsPath:   globalConfig.DocsPath,
 		DocsDepth:  globalConfig.DocsDepth,
 		DefaultDoc: globalConfig.DefaultDoc,
+	}
+	if globalConfig.Slurm.Enabled {
+		globalConfig.Slurm.Available = slurm.IsAvailable()
+		if !globalConfig.Slurm.Available && isDevMode {
+			slurm.EnableMockMode()
+			globalConfig.Slurm.Available = true
+			log.Printf("Slurm mock mode enabled for development")
+		}
+	} else {
+		globalConfig.Slurm.Available = false
 	}
 
 	log.Printf("Initializing %s Backend (%s)...", globalConfig.ProjectName, Version)
@@ -263,7 +282,6 @@ func runServer(skipFrontendCheck bool) {
 				}
 
 				if newInterval != currentInterval {
-					log.Printf("Monitor CRG interval changed: %ds → %ds", int(currentInterval.Seconds()), int(newInterval.Seconds()))
 					ticker.Reset(newInterval)
 					currentInterval = newInterval
 				}
@@ -305,6 +323,13 @@ func runServer(skipFrontendCheck bool) {
 	http.HandleFunc("/api/config", handleConfig)
 	http.HandleFunc("/api/docs/tree", docs.TreeHandler(docsConfig))
 	http.HandleFunc("/api/docs/content", docs.ContentHandler(docsConfig))
+	if globalConfig.Slurm.Available {
+		http.HandleFunc("/api/slurm/resources", slurm.ResourcesHandler)
+		http.HandleFunc("/api/slurm/jobs", slurm.JobsHandler)
+		log.Printf("Slurm integration enabled")
+	} else if globalConfig.Slurm.Enabled {
+		log.Printf("[WARN] Slurm enabled in config but commands are not available")
+	}
 
 	// 5. Configure Frontend Static Files
 	if skipFrontendCheck {

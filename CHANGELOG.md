@@ -2,6 +2,19 @@
 
 All notable changes to LabMD will be documented in this file.
 
+## [v0.2.0] - 2026-03-25
+
+### Added
+
+- Added optional Slurm support with resource overview and job queue pages
+- Added development mock data for Slurm when running locally without a Slurm installation
+
+### Changed
+
+- Reorganized backend code by feature directories to make future additions easier
+- Refined the Slurm page layout, filters, and job table behavior
+- Adjusted shared docs installation permissions so uploaded files stay readable without becoming world-writable
+
 ## [v0.1.2] - 2026-03-24
 
 ### Fixes

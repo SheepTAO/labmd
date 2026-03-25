@@ -33,6 +33,12 @@ type Config struct {
 		IgnoredUsers       []string          `json:"ignoredUsers"`
 		MaxUsersToList     int               `json:"maxUsersToList"`
 	} `json:"disk"`
+	Slurm struct {
+		Enabled     bool `json:"enabled"`
+		Available   bool `json:"available"`
+		IntervalSec int  `json:"intervalSec"`
+		DefaultJobs int  `json:"defaultJobs"`
+	} `json:"slurm"`
 }
 
 var globalConfig Config
@@ -65,6 +71,10 @@ func LoadConfig(configPath string) {
 	}
 	globalConfig.Disk.IgnoredUsers = []string{"lost+found"}
 	globalConfig.Disk.MaxUsersToList = 12
+	globalConfig.Slurm.Enabled = false
+	globalConfig.Slurm.Available = false
+	globalConfig.Slurm.IntervalSec = 5
+	globalConfig.Slurm.DefaultJobs = 10
 
 	// 2. Try to read config file
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
@@ -126,4 +136,8 @@ func LoadConfig(configPath string) {
 
 	// Disk config
 	validateInt("MaxUsersToList", &globalConfig.Disk.MaxUsersToList, 1, 50)
+
+	// Slurm config
+	validateInt("SlurmIntervalSec", &globalConfig.Slurm.IntervalSec, 2, 300)
+	validateInt("SlurmDefaultJobs", &globalConfig.Slurm.DefaultJobs, 1, 100)
 }
