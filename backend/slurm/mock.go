@@ -13,14 +13,7 @@ func EnableMockMode() {
 }
 
 func PreloadMockHistory(historyIntervalMin, historyRetentionHour int) {
-	maxPoints := 1
-	if historyIntervalMin > 0 && historyRetentionHour > 0 {
-		totalMinutes := historyRetentionHour * 60
-		maxPoints = (totalMinutes + historyIntervalMin - 1) / historyIntervalMin
-		if maxPoints < 1 {
-			maxPoints = 1
-		}
-	}
+	_, maxPoints := historySettings(1, historyIntervalMin, historyRetentionHour)
 
 	history := newEmptyHistory(maxPoints)
 	startTime := time.Now().Add(-time.Duration(maxPoints-1) * time.Duration(historyIntervalMin) * time.Minute)

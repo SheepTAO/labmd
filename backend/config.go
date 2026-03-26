@@ -144,6 +144,6 @@ func LoadConfig(configPath string) {
 	// Slurm config
 	validateInt("SlurmIntervalSec", &globalConfig.Slurm.IntervalSec, 2, 300)
 	validateInt("SlurmDefaultJobs", &globalConfig.Slurm.DefaultJobs, 1, 100)
-	validateInt("SlurmHistoryIntervalMin", &globalConfig.Slurm.HistoryIntervalMin, 1, 30)
+	validateInt("SlurmHistoryIntervalMin", &globalConfig.Slurm.HistoryIntervalMin, 1, 60)
 	validateInt("SlurmHistoryRetentionHour", &globalConfig.Slurm.HistoryRetentionHour, 1, 24)
 }

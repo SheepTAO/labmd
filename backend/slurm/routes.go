@@ -5,7 +5,12 @@ import (
 	"net/http"
 )
 
-func ResourcesHandler(w http.ResponseWriter, r *http.Request) {
+type OverviewResponse struct {
+	Resources ResourceSummary `json:"resources"`
+	Jobs      []Job           `json:"jobs"`
+}
+
+func OverviewHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "application/json")
 
@@ -15,18 +20,14 @@ func ResourcesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(w).Encode(summary)
-}
-
-func JobsHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Content-Type", "application/json")
-
-	jobs, err := ListJobs()
+	jobs, err := GetJobs()
 	if err != nil {
 		http.Error(w, "Failed to load Slurm jobs", http.StatusInternalServerError)
 		return
 	}
 
-	json.NewEncoder(w).Encode(jobs)
+	json.NewEncoder(w).Encode(OverviewResponse{
+		Resources: summary,
+		Jobs:      jobs,
+	})
 }

@@ -362,14 +362,17 @@ func runServer(skipFrontendCheck bool) {
 		}
 	}()
 
+	if globalConfig.Slurm.Enabled && globalConfig.Slurm.Available {
+		slurm.StartPolling(globalConfig.Slurm.IntervalSec, log.Printf)
+	}
+
 	// 4. Configure Web Routes
 	http.HandleFunc("/api/stats", handleStats)
 	http.HandleFunc("/api/config", handleConfig)
 	http.HandleFunc("/api/docs/tree", docs.TreeHandler(docsConfig))
 	http.HandleFunc("/api/docs/content", docs.ContentHandler(docsConfig))
 	if globalConfig.Slurm.Available {
-		http.HandleFunc("/api/slurm/resources", slurm.ResourcesHandler)
-		http.HandleFunc("/api/slurm/jobs", slurm.JobsHandler)
+		http.HandleFunc("/api/slurm/overview", slurm.OverviewHandler)
 		log.Printf("Slurm integration enabled")
 	} else if globalConfig.Slurm.Enabled {
 		log.Printf("[WARN] Slurm enabled in config but commands are not available")

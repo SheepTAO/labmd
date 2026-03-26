@@ -162,8 +162,10 @@ mkdir -p /etc/labmd
 mkdir -p /usr/share/labmd
 
 # Install binary and frontend
-cp labmd /usr/local/bin/
-chmod +x /usr/local/bin/labmd
+TMP_BINARY="/usr/local/bin/labmd.new"
+cp labmd "$TMP_BINARY"
+chmod +x "$TMP_BINARY"
+mv -f "$TMP_BINARY" /usr/local/bin/labmd
 echo -e "${GREEN}[OK]${NC} Binary installed"
 
 cp -r dist /usr/share/labmd/

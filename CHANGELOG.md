@@ -2,7 +2,24 @@
 
 All notable changes to LabMD will be documented in this file.
 
-## [v0.2.1] - 2026-03-27
+## [v0.2.2] - 2026-03-26
+
+### Added
+
+- Added a unified `/api/slurm/overview` endpoint for Slurm dashboard data
+
+### Changed
+
+- Moved Slurm resource and job collection fully into backend background polling with cached responses
+- Simplified the Slurm dashboard data flow so the frontend only fetches and renders overview data
+- Refined Slurm history sampling initialization and cleaned up the Slurm code structure for easier maintenance
+
+### Fixed
+
+- Fixed upgrade installation replacing the running binary by switching to an atomic binary replacement flow
+- Updated documentation and badges to match the current release and Slurm API layout
+
+## [v0.2.1] - 2026-03-26
 
 ### Added
 

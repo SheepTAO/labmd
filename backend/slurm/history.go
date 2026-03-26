@@ -23,6 +23,7 @@ var historyState = struct {
 	sampleEvery int
 	maxPoints   int
 	pollCount   int
+	hasSamples  bool
 	history     ResourceHistory
 }{
 	sampleEvery: 1,
@@ -31,6 +32,50 @@ var historyState = struct {
 }
 
 func ConfigureHistory(intervalSec, historyIntervalMin, historyRetentionHour int) {
+	sampleEvery, maxPoints := historySettings(intervalSec, historyIntervalMin, historyRetentionHour)
+
+	historyState.Lock()
+	defer historyState.Unlock()
+	historyState.sampleEvery = sampleEvery
+	historyState.maxPoints = maxPoints
+	historyState.pollCount = 0
+	historyState.hasSamples = false
+	historyState.history = newEmptyHistory(maxPoints)
+}
+
+func preloadHistory(history ResourceHistory) {
+	historyState.Lock()
+	defer historyState.Unlock()
+
+	historyState.pollCount = 0
+	historyState.maxPoints = len(history.CPU)
+	historyState.hasSamples = hasSamples(history)
+	historyState.history = cloneHistory(history)
+}
+
+func attachHistory(summary ResourceSummary) ResourceSummary {
+	historyState.Lock()
+	defer historyState.Unlock()
+
+	shouldSample := !historyState.hasSamples
+	if !shouldSample {
+		historyState.pollCount++
+		shouldSample = historyState.pollCount >= historyState.sampleEvery
+	}
+	if shouldSample {
+		timestamp := time.Now().Format(time.RFC3339)
+		historyState.history.CPU = pushPoint(historyState.history.CPU, summary.CPU, timestamp)
+		historyState.history.Memory = pushPoint(historyState.history.Memory, summary.Memory, timestamp)
+		historyState.history.GPU = pushPoint(historyState.history.GPU, summary.GPU, timestamp)
+		historyState.pollCount = 0
+		historyState.hasSamples = true
+	}
+
+	summary.History = cloneHistory(historyState.history)
+	return summary
+}
+
+func historySettings(intervalSec, historyIntervalMin, historyRetentionHour int) (int, int) {
 	sampleEvery := 1
 	if intervalSec > 0 && historyIntervalMin > 0 {
 		totalSeconds := historyIntervalMin * 60
@@ -49,39 +94,7 @@ func ConfigureHistory(intervalSec, historyIntervalMin, historyRetentionHour int)
 		}
 	}
 
-	historyState.Lock()
-	defer historyState.Unlock()
-	historyState.sampleEvery = sampleEvery
-	historyState.maxPoints = maxPoints
-	historyState.pollCount = 0
-	historyState.history = newEmptyHistory(maxPoints)
-}
-
-func preloadHistory(history ResourceHistory) {
-	historyState.Lock()
-	defer historyState.Unlock()
-
-	historyState.pollCount = 0
-	historyState.maxPoints = len(history.CPU)
-	historyState.history = cloneHistory(history)
-}
-
-func attachHistory(summary ResourceSummary) ResourceSummary {
-	historyState.Lock()
-	defer historyState.Unlock()
-
-	historyState.pollCount++
-	shouldSample := historyState.pollCount >= historyState.sampleEvery
-	if shouldSample {
-		timestamp := time.Now().Format(time.RFC3339)
-		historyState.history.CPU = pushPoint(historyState.history.CPU, summary.CPU, timestamp)
-		historyState.history.Memory = pushPoint(historyState.history.Memory, summary.Memory, timestamp)
-		historyState.history.GPU = pushPoint(historyState.history.GPU, summary.GPU, timestamp)
-		historyState.pollCount = 0
-	}
-
-	summary.History = cloneHistory(historyState.history)
-	return summary
+	return sampleEvery, maxPoints
 }
 
 func pushPoint(points []HistoryPoint, metric ResourceMetric, timestamp string) []HistoryPoint {
@@ -113,4 +126,17 @@ func cloneHistory(history ResourceHistory) ResourceHistory {
 		Memory: append([]HistoryPoint(nil), history.Memory...),
 		GPU:    append([]HistoryPoint(nil), history.GPU...),
 	}
+}
+
+func hasSamples(history ResourceHistory) bool {
+	return sliceHasSamples(history.CPU) || sliceHasSamples(history.Memory) || sliceHasSamples(history.GPU)
+}
+
+func sliceHasSamples(points []HistoryPoint) bool {
+	for _, point := range points {
+		if point.Timestamp != "" {
+			return true
+		}
+	}
+	return false
 }

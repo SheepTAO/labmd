@@ -8,11 +8,44 @@ const emptyResources = {
   history: { cpu: [], memory: [], gpu: [] },
 };
 
-const formatMemory = (value) => {
-  if (value >= 1024) {
-    return `${(value / 1024).toFixed(0)}G`;
-  }
-  return `${value}M`;
+const formatMemory = (value) => `${Math.round(value / 1024)}G`;
+
+const EMPTY_HISTORY_POINTS = Array.from({ length: 12 }, () => ({ used: 0, available: 0, total: 0, timestamp: '' }));
+
+const LINE_COLORS = {
+  indigo: {
+    available: '#6366f1',
+    used: '#818cf8',
+    total: '#94a3ff',
+    grid: 'rgba(99, 102, 241, 0.14)',
+  },
+  emerald: {
+    available: '#10b981',
+    used: '#34d399',
+    total: '#86efac',
+    grid: 'rgba(16, 185, 129, 0.14)',
+  },
+  amber: {
+    available: '#f59e0b',
+    used: '#fbbf24',
+    total: '#facc15',
+    grid: 'rgba(245, 158, 11, 0.14)',
+  },
+};
+
+const CARD_COLORS = {
+  indigo: {
+    shell: 'bg-indigo-50/80 border-indigo-100 text-indigo-600 dark:bg-indigo-950/20 dark:border-indigo-700/55 dark:text-indigo-400 shadow-md shadow-indigo-100/60 dark:shadow-slate-950/30',
+    badge: 'bg-white dark:bg-slate-800 border-indigo-100 dark:border-indigo-700/55',
+  },
+  emerald: {
+    shell: 'bg-emerald-50/80 border-emerald-100 text-emerald-600 dark:bg-emerald-950/20 dark:border-emerald-700/55 dark:text-emerald-400 shadow-md shadow-emerald-100/60 dark:shadow-slate-950/30',
+    badge: 'bg-white dark:bg-slate-800 border-emerald-100 dark:border-emerald-700/55',
+  },
+  amber: {
+    shell: 'bg-amber-50/80 border-amber-100 text-amber-600 dark:bg-amber-950/20 dark:border-amber-700/55 dark:text-amber-400 shadow-md shadow-amber-100/60 dark:shadow-slate-950/30',
+    badge: 'bg-white dark:bg-slate-800 border-amber-100 dark:border-amber-700/55',
+  },
 };
 
 const getStateClasses = (state) => {
@@ -66,36 +99,56 @@ const buildPolyline = (points, width, height, accessor, maxValue) => (
     .join(' ')
 );
 
+const buildSummaryCards = (resources) => ([
+  {
+    label: 'CPU',
+    freeValue: resources.cpu.available,
+    freeLabel: 'Idle',
+    usedValue: resources.cpu.used,
+    usedLabel: 'Used',
+    totalValue: resources.cpu.total,
+    totalLabel: 'Total',
+    icon: <Cpu size={24} />,
+    color: 'indigo',
+    history: resources.history?.cpu || [],
+    formatter: (value) => String(value),
+  },
+  {
+    label: 'MEM',
+    freeValue: formatMemory(resources.memory.available),
+    freeLabel: 'Free',
+    usedValue: formatMemory(resources.memory.used),
+    usedLabel: 'Used',
+    totalValue: formatMemory(resources.memory.total),
+    totalLabel: 'Total',
+    icon: <MemoryStick size={24} />,
+    color: 'emerald',
+    history: resources.history?.memory || [],
+    formatter: (value) => formatMemory(value),
+  },
+  {
+    label: 'GPU',
+    freeValue: resources.gpu.available,
+    freeLabel: 'Idle',
+    usedValue: resources.gpu.used,
+    usedLabel: 'Used',
+    totalValue: resources.gpu.total,
+    totalLabel: 'Total',
+    icon: <Gpu size={24} />,
+    color: 'amber',
+    history: resources.history?.gpu || [],
+    formatter: (value) => String(value),
+  },
+]);
+
 const ResourceTrendCard = ({ card, theme, history, formatter = (value) => String(value) }) => {
   const [hoveredIndex, setHoveredIndex] = useState(null);
   const chartHeight = 118;
   const chartWidth = 520;
-  const safeHistory = history?.length ? history : Array.from({ length: 12 }, () => ({ used: 0, available: 0, total: 0, timestamp: '' }));
+  const safeHistory = history?.length ? history : EMPTY_HISTORY_POINTS;
   const maxValue = Math.max(1, ...safeHistory.map((point) => point.total || 0));
   const hoveredPoint = hoveredIndex !== null ? safeHistory[hoveredIndex] : safeHistory[safeHistory.length - 1];
-
-  const lineColors = {
-    indigo: {
-      available: '#6366f1',
-      used: '#818cf8',
-      total: '#94a3ff',
-      grid: 'rgba(99, 102, 241, 0.14)',
-    },
-    emerald: {
-      available: '#10b981',
-      used: '#34d399',
-      total: '#86efac',
-      grid: 'rgba(16, 185, 129, 0.14)',
-    },
-    amber: {
-      available: '#f59e0b',
-      used: '#fbbf24',
-      total: '#facc15',
-      grid: 'rgba(245, 158, 11, 0.14)',
-    },
-  };
-
-  const colors = lineColors[card.color];
+  const colors = LINE_COLORS[card.color];
 
   return (
     <div className={`rounded-2xl border p-5 ${theme.shell}`}>
@@ -222,101 +275,37 @@ const SlurmView = ({ config }) => {
   const tableContainerRef = useRef(null);
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
 
     const fetchData = async () => {
       try {
-        const [resourcesRes, jobsRes] = await Promise.all([
-          fetch('/api/slurm/resources'),
-          fetch('/api/slurm/jobs'),
-        ]);
-
-        if (!resourcesRes.ok || !jobsRes.ok) {
+        const response = await fetch('/api/slurm/overview', { signal: controller.signal });
+        if (!response.ok) {
           throw new Error('Failed to load Slurm data');
         }
 
-        const [resourcesData, jobsData] = await Promise.all([
-          resourcesRes.json(),
-          jobsRes.json(),
-        ]);
-
-        if (!cancelled) {
-          setResources(resourcesData);
-          setJobs(jobsData);
-        }
+        const overview = await response.json();
+        setResources(overview.resources || emptyResources);
+        setJobs(overview.jobs || []);
       } catch (err) {
-        console.error('Failed to fetch Slurm data:', err);
-        if (!cancelled) {
-          setResources(emptyResources);
-          setJobs([]);
+        if (err.name === 'AbortError') {
+          return;
         }
+        console.error('Failed to fetch Slurm data:', err);
+        setResources(emptyResources);
+        setJobs([]);
       }
     };
 
     fetchData();
     const timer = setInterval(fetchData, config.intervalSec * 1000);
     return () => {
-      cancelled = true;
+      controller.abort();
       clearInterval(timer);
     };
   }, [config.intervalSec]);
 
-  const summaryCards = [
-    {
-      label: 'CPU',
-      freeValue: resources.cpu.available,
-      freeLabel: 'Idle',
-      usedValue: resources.cpu.used,
-      usedLabel: 'Used',
-      totalValue: resources.cpu.total,
-      totalLabel: 'Total',
-      icon: <Cpu size={24} />,
-      color: 'indigo',
-      history: resources.history?.cpu || [],
-      formatter: (value) => String(value),
-    },
-    {
-      label: 'MEM',
-      freeValue: formatMemory(resources.memory.available),
-      freeLabel: 'Free',
-      usedValue: formatMemory(resources.memory.used),
-      usedLabel: 'Used',
-      totalValue: formatMemory(resources.memory.total),
-      totalLabel: 'Total',
-      icon: <MemoryStick size={24} />,
-      color: 'emerald',
-      history: resources.history?.memory || [],
-      formatter: (value) => formatMemory(value),
-    },
-    {
-      label: 'GPU',
-      freeValue: resources.gpu.available,
-      freeLabel: 'Idle',
-      usedValue: resources.gpu.used,
-      usedLabel: 'Used',
-      totalValue: resources.gpu.total,
-      totalLabel: 'Total',
-      icon: <Gpu size={24} />,
-      color: 'amber',
-      history: resources.history?.gpu || [],
-      formatter: (value) => String(value),
-    },
-  ];
-
-  const cardColors = {
-    indigo: {
-      shell: 'bg-indigo-50/80 border-indigo-100 text-indigo-600 dark:bg-indigo-950/20 dark:border-indigo-700/55 dark:text-indigo-400 shadow-md shadow-indigo-100/60 dark:shadow-slate-950/30',
-      badge: 'bg-white dark:bg-slate-800 border-indigo-100 dark:border-indigo-700/55',
-    },
-    emerald: {
-      shell: 'bg-emerald-50/80 border-emerald-100 text-emerald-600 dark:bg-emerald-950/20 dark:border-emerald-700/55 dark:text-emerald-400 shadow-md shadow-emerald-100/60 dark:shadow-slate-950/30',
-      badge: 'bg-white dark:bg-slate-800 border-emerald-100 dark:border-emerald-700/55',
-    },
-    amber: {
-      shell: 'bg-amber-50/80 border-amber-100 text-amber-600 dark:bg-amber-950/20 dark:border-amber-700/55 dark:text-amber-400 shadow-md shadow-amber-100/60 dark:shadow-slate-950/30',
-      badge: 'bg-white dark:bg-slate-800 border-amber-100 dark:border-amber-700/55',
-    },
-  };
+  const summaryCards = buildSummaryCards(resources);
 
   const filteredJobs = jobs
     .filter((job) => {
@@ -344,7 +333,7 @@ const SlurmView = ({ config }) => {
           <ResourceTrendCard
             key={card.label}
             card={card}
-            theme={cardColors[card.color]}
+            theme={CARD_COLORS[card.color]}
             history={card.history}
             formatter={card.formatter}
           />

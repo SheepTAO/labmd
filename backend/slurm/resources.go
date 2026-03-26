@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 )
 
 type ResourceMetric struct {
@@ -21,9 +23,75 @@ type ResourceSummary struct {
 	History ResourceHistory `json:"history"`
 }
 
+var resourceState = struct {
+	sync.RWMutex
+	summary ResourceSummary
+	ready   bool
+	once    sync.Once
+}{}
+
 func GetResourceSummary() (ResourceSummary, error) {
+	resourceState.RLock()
+	if resourceState.ready {
+		summary := cloneResourceSummary(resourceState.summary)
+		resourceState.RUnlock()
+		return summary, nil
+	}
+	resourceState.RUnlock()
+
+	if err := UpdateResourceSummary(); err != nil {
+		return ResourceSummary{}, err
+	}
+
+	resourceState.RLock()
+	defer resourceState.RUnlock()
+	return cloneResourceSummary(resourceState.summary), nil
+}
+
+func UpdateResourceSummary() error {
+	summary, err := collectResourceSummary()
+	if err != nil {
+		return err
+	}
+
+	summary = attachHistory(summary)
+
+	resourceState.Lock()
+	resourceState.summary = cloneResourceSummary(summary)
+	resourceState.ready = true
+	resourceState.Unlock()
+
+	return nil
+}
+
+func StartPolling(intervalSec int, logf func(string, ...any)) {
+	resourceState.once.Do(func() {
+		if err := UpdateResourceSummary(); err != nil {
+			logSlurmf(logf, "Initial Slurm resource scan failed: %v", err)
+		}
+		if err := UpdateJobs(); err != nil {
+			logSlurmf(logf, "Initial Slurm job scan failed: %v", err)
+		}
+
+		go func() {
+			ticker := time.NewTicker(time.Duration(intervalSec) * time.Second)
+			defer ticker.Stop()
+
+			for range ticker.C {
+				if err := UpdateResourceSummary(); err != nil {
+					logSlurmf(logf, "Slurm resource scan failed: %v", err)
+				}
+				if err := UpdateJobs(); err != nil {
+					logSlurmf(logf, "Slurm job scan failed: %v", err)
+				}
+			}
+		}()
+	})
+}
+
+func collectResourceSummary() (ResourceSummary, error) {
 	if mockMode {
-		return attachHistory(mockResourceSummary()), nil
+		return mockResourceSummary(), nil
 	}
 
 	summary := ResourceSummary{}
@@ -77,7 +145,18 @@ func GetResourceSummary() (ResourceSummary, error) {
 	summary.Memory.Available = max(summary.Memory.Total-summary.Memory.Used, 0)
 	summary.GPU.Available = max(summary.GPU.Total-summary.GPU.Used, 0)
 
-	return attachHistory(summary), nil
+	return summary, nil
+}
+
+func cloneResourceSummary(summary ResourceSummary) ResourceSummary {
+	summary.History = cloneHistory(summary.History)
+	return summary
+}
+
+func logSlurmf(logf func(string, ...any), format string, args ...any) {
+	if logf != nil {
+		logf(format, args...)
+	}
 }
 
 func parseCPUState(value string) (int, int, int, int, error) {

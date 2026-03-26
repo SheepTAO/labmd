@@ -3,6 +3,7 @@ package slurm
 import (
 	"os/exec"
 	"strings"
+	"sync"
 )
 
 type Job struct {
@@ -19,7 +20,44 @@ type Job struct {
 	Reason    string `json:"reason"`
 }
 
-func ListJobs() ([]Job, error) {
+var jobState = struct {
+	sync.RWMutex
+	jobs  []Job
+	ready bool
+}{}
+
+func GetJobs() ([]Job, error) {
+	jobState.RLock()
+	if jobState.ready {
+		jobs := cloneJobs(jobState.jobs)
+		jobState.RUnlock()
+		return jobs, nil
+	}
+	jobState.RUnlock()
+
+	if err := UpdateJobs(); err != nil {
+		return nil, err
+	}
+
+	jobState.RLock()
+	defer jobState.RUnlock()
+	return cloneJobs(jobState.jobs), nil
+}
+
+func UpdateJobs() error {
+	jobs, err := collectJobs()
+	if err != nil {
+		return err
+	}
+
+	jobState.Lock()
+	jobState.jobs = cloneJobs(jobs)
+	jobState.ready = true
+	jobState.Unlock()
+	return nil
+}
+
+func collectJobs() ([]Job, error) {
 	if mockMode {
 		return mockJobs(), nil
 	}
@@ -64,4 +102,8 @@ func ListJobs() ([]Job, error) {
 	}
 
 	return jobs, nil
+}
+
+func cloneJobs(jobs []Job) []Job {
+	return append([]Job(nil), jobs...)
 }

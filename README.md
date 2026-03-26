@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-0.1.0-blue)
+![Version](https://img.shields.io/github/v/release/SheepTAO/labmd)
 ![Go](https://img.shields.io/badge/Go-1.25+-00ADD8?logo=go)
 ![React](https://img.shields.io/badge/React-18+-61DAFB?logo=react)
 ![License](https://img.shields.io/badge/license-MIT-green)
@@ -249,8 +249,7 @@ LabMD exposes the following REST APIs:
 | `/api/config` | GET | Server configuration (project name, lab name, admin info) |
 | `/api/docs/tree` | GET | Documentation file tree structure |
 | `/api/docs/content?path=<file>` | GET | Markdown file content |
-| `/api/slurm/resources` | GET | Slurm resource overview (when enabled and available) |
-| `/api/slurm/jobs` | GET | Slurm job list (when enabled and available) |
+| `/api/slurm/overview` | GET | Slurm resource overview and job list (when enabled and available) |
 
 All responses are in JSON format with CORS enabled for development.
 
